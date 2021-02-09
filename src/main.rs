@@ -8,7 +8,7 @@ use gen::Generator;
 
 fn main() -> anyhow::Result<()> {
     let words = std::fs::read_to_string("words/google-10000-english-usa-no-swears.txt")?;
-    let dict = Dictionary::from_str(words);
+    let dict = Dictionary::from_string(words);
 
     println!("{} words in dictionary", dict.len());
 

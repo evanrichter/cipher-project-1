@@ -74,3 +74,32 @@ impl<'d> Generator<'d> {
         sentence.join(" ")
     }
 }
+
+// Tests for the Generator type. These get run with `cargo test`
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn generate_words() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        let mut g = Generator::with_dict(&d);
+        assert_eq!("jkl", g.generate_words(1));
+        assert_eq!("ghi", g.generate_words(1));
+        assert_eq!("ghi", g.generate_words(1));
+        assert_eq!("abc", g.generate_words(1));
+        assert_eq!("abc", g.generate_words(1));
+        assert_eq!("abc", g.generate_words(1));
+        assert_eq!("def", g.generate_words(1));
+    }
+
+    #[test]
+    fn generate_sentence() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        let mut g = Generator::with_dict(&d);
+        assert_eq!("jkl ghi ghi abc abc abc def", g.generate_words(7));
+    }
+}

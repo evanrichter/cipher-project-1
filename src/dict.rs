@@ -13,7 +13,7 @@ impl Dictionary {
     ///
     ///  This function also rejects any word that contains non alphabetic ascii characters,
     ///  printing to stderr for each word it tosses out.
-    pub fn from_str(source: String) -> Self {
+    pub fn from_string(source: String) -> Self {
         let mut words: Vec<String> = source
             // trim off starting and trailing whitespace
             .trim()
@@ -42,5 +42,66 @@ impl Dictionary {
     /// Return how many words are in the dictionary
     pub fn len(&self) -> usize {
         self.words.len()
+    }
+}
+
+// Tests for the Dictionary type. These get run with `cargo test`
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn create() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.len(), 4);
+        assert_eq!(d.words[0], "abc");
+        assert_eq!(d.words[1], "def");
+        assert_eq!(d.words[2], "ghi");
+        assert_eq!(d.words[3], "jkl");
+    }
+
+    #[test]
+    fn len() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.len(), 4);
+        assert_eq!(d.words.len(), 4);
+    }
+
+    #[test]
+    fn reject_nonascii() {
+        let s = String::from("abc def g.hi jkl");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.len(), 3);
+        assert_eq!(d.words[0], "abc");
+        assert_eq!(d.words[1], "def");
+        assert_eq!(d.words[2], "jkl");
+    }
+
+    #[test]
+    fn order() {
+        let s = String::from("def jkl abc ghi");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.len(), 4);
+        assert_eq!(d.words[0], "abc");
+        assert_eq!(d.words[1], "def");
+        assert_eq!(d.words[2], "ghi");
+        assert_eq!(d.words[3], "jkl");
+    }
+
+    #[test]
+    fn trim() {
+        let s = String::from("    abc \n  def \t ghi   jkl\n\n  ");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.len(), 4);
+        assert_eq!(d.words[0], "abc");
+        assert_eq!(d.words[1], "def");
+        assert_eq!(d.words[2], "ghi");
+        assert_eq!(d.words[3], "jkl");
     }
 }
