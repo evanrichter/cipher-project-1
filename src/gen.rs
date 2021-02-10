@@ -6,7 +6,7 @@ use crate::dict::Dictionary;
 #[derive(Clone, Debug)]
 pub struct Generator<'d> {
     dictionary: &'d Dictionary,
-    rng: Rng,
+    pub rng: Rng,
 }
 
 /// This is [RomuDuo]

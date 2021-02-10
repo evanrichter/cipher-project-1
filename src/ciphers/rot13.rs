@@ -43,20 +43,7 @@ mod tests {
     }
 
     #[test]
-    fn stresstest() -> anyhow::Result<()> {
-        let words = std::fs::read_to_string("words/google-10000-english-usa-no-swears.txt")?;
-        let dict = Dictionary::from_string(words);
-        let mut gen = Generator::with_dict(&dict);
-
-        let rot13 = Rot13;
-
-        for _ in 0..10000 {
-            let plaintext = gen.generate_words(50);
-            let ciphertext = rot13.encrypt(&plaintext, &dict);
-            let decrypted = rot13.decrypt(&ciphertext, &dict);
-            assert_eq!(plaintext, decrypted);
-        }
-
-        Ok(())
+    fn stresstest() {
+        crate::ciphers::testing::stresstest(Rot13, 10000).unwrap();
     }
 }
