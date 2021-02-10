@@ -90,7 +90,7 @@ impl Rng {
     /// let choices = [1, 1, 1, 2, 3, 4, 4, 8];
     /// 
     /// println!("first choice is {}", rng.choose(&choices));
-    /// println!("first choice is {}", rng.choose(&choices));
+    /// println!("second choice is {}", rng.choose(&choices));
     /// ```
     pub fn choose<'a, T>(&mut self, choices: &'a [T]) -> &'a T {
         // generate a random but valid index
