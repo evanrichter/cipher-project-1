@@ -17,7 +17,7 @@ pub mod testing {
     use crate::gen::Generator;
 
     pub fn stresstest<T: Cipher>(cipher: T, cycles: usize) -> anyhow::Result<()> {
-        let words = std::fs::read_to_string("words/google-10000-english-usa-no-swears.txt")?;
+        let words = std::fs::read_to_string("words/default.txt")?;
         let dict = Dictionary::from_string(words);
         let mut gen = Generator::with_dict(&dict);
 

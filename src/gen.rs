@@ -196,4 +196,14 @@ mod tests {
             assert!(x <= 5);
         }
     }
+
+    #[test]
+    fn clone_debug() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        let gen = Generator::with_dict(&d);
+        let new_gen = gen.clone();
+        println!("{:?}", new_gen);
+    }
 }
