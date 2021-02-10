@@ -73,6 +73,7 @@ impl Rng {
     ///
     /// To prevent problems with this, `with_seed` asserts that neither starting state is zero, and
     /// runs 100 iterations of [`next`][`Rng::next`] before returning the resulting Rng.
+    #[allow(dead_code)]
     pub fn with_seed(x: u64, y: u64) -> Self {
         assert!(x != 0 && y != 0, "seed values should not be zero!");
         let mut rng = Self { x, y };
