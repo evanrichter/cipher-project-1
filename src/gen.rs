@@ -88,7 +88,7 @@ impl Rng {
     /// ```
     /// let mut rng = Rng::default();
     /// let choices = [1, 1, 1, 2, 3, 4, 4, 8];
-    /// 
+    ///
     /// println!("first choice is {}", rng.choose(&choices));
     /// println!("second choice is {}", rng.choose(&choices));
     /// ```
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn choose() {
-        let choices = [0,1,2,3,4,5];
+        let choices = [0, 1, 2, 3, 4, 5];
         let mut rng = Rng::default();
 
         // should be able to pick all options within 100 tries
