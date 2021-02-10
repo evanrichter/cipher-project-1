@@ -3,7 +3,7 @@ on: [push]
 name: Code Coverage
 
 jobs:
-  coverage:
+  code-coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -11,20 +11,20 @@ jobs:
         with:
           toolchain: nightly
           override: true
+          components: llvm-tools-preview
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast
         env:
           CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTFLAGS: '-Zinstrument-coverage'
       - uses: actions-rs/install@v0.1
         with:
           crate: grcov
           version: latest
           use-tool-cache: true
-      - uses: actions-rs/grcov@v0.1
+      - name: generate-report
+        run: grcov . -s . -t html --binary-path ./target/debug/ -o ./coverage-report/
       - uses: actions/upload-artifact@v2
         with:
           name: coverage-report
