@@ -25,7 +25,6 @@ impl Cipher for Rot13 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gen::Generator;
 
     #[test]
     fn round_trip() {
