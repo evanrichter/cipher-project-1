@@ -1,16 +1,12 @@
-name: Rust
+name: Build and Test
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  buildtest:
 
     runs-on: ubuntu-latest
 

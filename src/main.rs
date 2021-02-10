@@ -35,3 +35,9 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+#[test]
+fn test_main() {
+    main().expect("main threw an error");
+}
