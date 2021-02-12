@@ -1,11 +1,10 @@
 use crate::utils::{CharToNum, NumToChar};
 use crate::Cipher;
-use crate::Dictionary;
 
 pub struct Rot13;
 
 impl Cipher for Rot13 {
-    fn encrypt<'d>(&self, plaintext: &str, _dict: &'d Dictionary) -> String {
+    fn encrypt<'d>(&self, plaintext: &str) -> String {
         plaintext
             .chars()
             .map(|c| (c.to_num() + 13) % 27)
@@ -13,7 +12,7 @@ impl Cipher for Rot13 {
             .collect()
     }
 
-    fn decrypt<'d>(&self, ciphertext: &str, _dict: &'d Dictionary) -> String {
+    fn decrypt<'d>(&self, ciphertext: &str) -> String {
         ciphertext
             .chars()
             .map(|c| (c.to_num() + (27 - 13)) % 27)
@@ -29,15 +28,14 @@ mod tests {
     #[test]
     fn round_trip() {
         let rot13 = Rot13;
-        let dict = Dictionary::from_string("".to_string());
 
         // assert encryption works as expected
         let plaintext = "abcdefghijklmnopqrstuvwxyz ";
-        let ciphertext = rot13.encrypt(&plaintext, &dict);
+        let ciphertext = rot13.encrypt(&plaintext);
         assert_eq!(ciphertext, "nopqrstuvwxyz abcdefghijklm");
 
         // assert decryption produces the same plaintext
-        let decrypted = rot13.decrypt(&ciphertext, &dict);
+        let decrypted = rot13.decrypt(&ciphertext);
         assert_eq!(plaintext, decrypted);
     }
 

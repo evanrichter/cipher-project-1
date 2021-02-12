@@ -24,8 +24,8 @@ fn main() -> anyhow::Result<()> {
     let rot13 = ciphers::Rot13;
     for _ in 0..5 {
         let plaintext = gen.generate_words(10);
-        let ciphertext = rot13.encrypt(&plaintext, &dict);
-        let decrypted = rot13.decrypt(&ciphertext, &dict);
+        let ciphertext = rot13.encrypt(&plaintext);
+        let decrypted = rot13.decrypt(&ciphertext);
 
         println!("plaintext: {}", plaintext);
         println!("    rot13: {}", ciphertext);

@@ -3,17 +3,18 @@
 mod rot13;
 pub use rot13::Rot13;
 
-use crate::Dictionary;
-
 /// The Cipher trait describes what every cipher needs to be able to do.
 pub trait Cipher {
-    fn encrypt<'d>(&self, plaintext: &str, dict: &'d Dictionary) -> String;
-    fn decrypt<'d>(&self, ciphertext: &str, dict: &'d Dictionary) -> String;
+    /// Encrypt the given plaintext and return a String
+    fn encrypt<'d>(&self, plaintext: &str) -> String;
+    /// Decrypt the given ciphertext and return a String
+    fn decrypt<'d>(&self, ciphertext: &str) -> String;
 }
 
 #[cfg(test)]
 pub mod testing {
     use super::*;
+    use crate::dict::Dictionary;
     use crate::gen::Generator;
 
     pub fn stresstest<T: Cipher>(cipher: T, cycles: usize) -> anyhow::Result<()> {
@@ -28,8 +29,8 @@ pub mod testing {
             // generate plaintext, ciphertext, and then decrypt
             let plaintext = gen.generate_words(num_words);
             println!("{}", plaintext);
-            let ciphertext = cipher.encrypt(&plaintext, &dict);
-            let decrypted = cipher.decrypt(&ciphertext, &dict);
+            let ciphertext = cipher.encrypt(&plaintext);
+            let decrypted = cipher.decrypt(&ciphertext);
 
             // plaintext must always differ from ciphertext
             assert_ne!(plaintext, ciphertext);
