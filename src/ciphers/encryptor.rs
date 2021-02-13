@@ -1,17 +1,18 @@
 use crate::ciphers::{Cipher, KeySchedule};
+use crate::ciphers::schedulers::RepeatingKey;
 use crate::rng::Rng;
 use crate::utils::{NumToChar, ShiftChar};
 
 use std::cell::Cell;
 
 /// The main encryption scheme described in the project description
-pub struct Encryptor<'k> {
+pub struct Encryptor<'k, K: KeySchedule> {
     /// The key chosen for this encryptor.
     ///
     /// The key length is called `t` in the description and is guaranteed to be between 1 and 24.
     key: &'k [i8],
     /// The scheduling algorithm for this encryptor
-    keyschedule: KeySchedule,
+    keyschedule: K,
     /// Rng to insert random characters when needed
     rng: Rng,
     /// The length of the plaintext most recently encrypted, or `None` if no plaintext was
@@ -31,10 +32,10 @@ pub struct Encryptor<'k> {
     prev_plaintext_length: Cell<Option<usize>>,
 }
 
-impl<'k> Encryptor<'k> {
+impl<'k, K: KeySchedule> Encryptor<'k, K> {
     /// Create a new Encryptor configured with the given key, [`KeySchedule`], and [`Rng`].
     #[allow(dead_code)]
-    pub fn new(key: &'k [i8], keyschedule: KeySchedule, rng: Rng) -> Self {
+    pub fn new(key: &'k [i8], keyschedule: K, rng: Rng) -> Self {
         Self {
             key,
             keyschedule,
@@ -42,32 +43,21 @@ impl<'k> Encryptor<'k> {
             prev_plaintext_length: Cell::new(None),
         }
     }
+}
 
+impl<'k> Encryptor<'k, RepeatingKey> {
     /// Encryptor with a simple repeating key scheduler.
-    ///
-    /// This key scheduler simply takes the key, and cycles through it, start to finish.
-    ///
-    /// Example with key `HEADCRAB` and plaintext: `RISE AND SHINE MISTER FREEMAN RISE AND SHINE`:
-    ///
-    /// ```
-    ///  Plaintext:     RISE AND SHINE MISTER FREEMAN RISE AND SHINE
-    /// Shifted by:     HEADCRABHEADCRABHEADCRABHEADCRABHEADCRABHEAD
-    /// ```
     pub fn repeating_key(key: &'k [i8], rng: Rng) -> Self {
-        fn keyschedule(index: usize, key_length: usize, _: usize) -> usize {
-            index % key_length
-        }
-
         Self {
             key,
-            keyschedule: &keyschedule,
+            keyschedule: RepeatingKey,
             rng,
             prev_plaintext_length: Cell::new(None),
         }
     }
 }
 
-impl<'k> Cipher for Encryptor<'k> {
+impl<'k, K: KeySchedule> Cipher for Encryptor<'k, K> {
     fn encrypt(&self, plaintext: &str) -> String {
         // get keylen and plaintext len
         let keylen = self.key.len();
@@ -91,8 +81,8 @@ impl<'k> Cipher for Encryptor<'k> {
 
         // continue encryption as long as there is a plaintext character left to read
         'encryption: while plaintext.peek().is_some() {
-            // get key index to use as shift
-            let index = (self.keyschedule)(cipher.len(), keylen, ptlen);
+            // get key index to use as shift.
+            let index = self.keyschedule.schedule(cipher.len(), keylen, ptlen);
 
             // get the shift amount from the key, or insert a random character. A random character
             // is only inserted when the index is out of bounds of the key.

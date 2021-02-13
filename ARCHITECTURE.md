@@ -180,20 +180,49 @@ the common logic to a helper function somehow.
 
 ## KeySchedule
 
-Located in `src/ciphers/mod.rs`.
+Located in `src/ciphers/schedulers/mod.rs`.
 
-This is the function prototype for scheduling keys, and what every team member
-will create at least one unique implementation of. An example of a key schedule
+This is the trait that defines scheduling keys, and what every team member will
+create at least one unique implementation of. An example of a key schedule
 algorithm is simply a repeating key:
 
 ```rust
-fn repeating_key(index: usize, key_length: usize, _plaintext_length: usize) -> usize {
-    index % key_length
+// this has no fields because there are no configuration options
+pub struct RepeatingKey;
+
+impl super::KeySchedule for RepeatingKey {
+    fn schedule(&self, index: usize, key_length: usize, _: usize) -> usize {
+        index % key_length
+    }
 }
 ```
 
-Everyone will need to make a similar function, and match the same function
-parameters and return type.
+This example is located in `src/ciphers/schedulers/repeatingkey.rs`.
+
+Everyone will need to make a similar struct and implement `KeySchedule`,
+matching the same function parameters and return type. It would be simplest to
+just copy repeatingkey.rs into a new file and making changes.
+
+If there are any constants in your keyscheduler, consider making them
+configurable. For example, if we wanted to insert a random character every `X`
+repetitions of the key, we could make a small change to the previous example:
+
+```rust
+// this has one field denoting number of repetitions before random char
+pub struct RepeatingKey {
+    reps_until_rand: usize,
+}
+
+impl super::KeySchedule for RepeatingKey {
+    fn schedule(&self, index: usize, key_length: usize, _: usize) -> usize {
+        if (index * self.reps_until_rand) % key_length == 0 {
+            return usize::MAX; // this will definitely be out of bounds
+        } else {
+            index % key_length
+        }
+    }
+}
+```
 
 ## Utils
 
