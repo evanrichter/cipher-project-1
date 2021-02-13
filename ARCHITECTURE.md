@@ -75,28 +75,16 @@ cracking accuracy.
     overnight even to try and find a combination that our cracking failed.
  7. Fix the bugs, come up with better cracking algorithms, and repeat.
 
-### Rng
+## Rng
 
-Also located in `src/gen.rs`.
+Located in `src/rng.rs`.
 
-There is a pseudo-random number generator based on RomuDuo that the `Generator`
+This is a pseudo-random number generator based on RomuDuo that the `Generator`
 uses to pick random words out of the `Dictionary`. It generates `u64` (unsigned
 64-bit integers) very quickly.
 
-Right now, only the Generator uses this, so it can stay in gen.rs. But it will
-probably be helpful for randomly testing cipher parameters as well, so it could
-move out at some point. The idea is that we could create a rotation cipher that
-looks like
-
-```rust
-struct Rotate {
-    rotate_amount: u8,
-}
-```
-
-Then when we test if `Rotate` even works properly as a cipher, or later if we
-can crack any configuration of it, we can generate not only random plaintext to
-encrypt, but also random rotation amounts.
+The Generator and the Encryptor use this, and later can be used to randomly
+select cipher parameters like random keys for testing.
 
 ## Cipher trait
 
@@ -112,8 +100,8 @@ defined Cipher as:
 
 ```rust
 pub trait Cipher {
-    fn encrypt<'d>(&self, plaintext: &str, dict: &'d Dictionary) -> String;
-    fn decrypt<'d>(&self, ciphertext: &str, dict: &'d Dictionary) -> String;
+    fn encrypt(&self, plaintext: &str) -> String;
+    fn decrypt(&self, ciphertext: &str) -> String;
 }
 ```
 
@@ -124,11 +112,9 @@ properties generically, with a test like this:
 
 ```rust
 pub fn test_cipher<T: Cipher>(cipher: T) {
-    let dict = Dictionary::from_string("");
-
     let plaintext = "a man a plan a canal panama";
-    let ciphertext = cipher.encrypt(&plaintext, &dict);
-    let decrypted = cipher.decrypt(&ciphertext, &dict);
+    let ciphertext = cipher.encrypt(&plaintext);
+    let decrypted = cipher.decrypt(&ciphertext);
 
     // plaintext must always differ from ciphertext
     assert_ne!(plaintext, ciphertext);
@@ -162,8 +148,7 @@ reduce the cycles.
 Located in `src/ciphers/rot13.rs`.
 
 To test the usefulness of the `Cipher` trait, I wanted to try a simple cipher
-and see if the interface was decent to work with. I'm still not sure if
-`encrypt` needs access to a dictionary or not, so that might go away.
+and see if the interface was decent to work with.
 
 The `src/ciphers` folder is where the other (and more useful) ciphers will go.
 
@@ -173,21 +158,71 @@ struct:
 
 ```rust
 struct Rot {
-    amount: u8,
+    amount: i8,
 }
 ```
 
 Then when it's time to do the rotation (encryption or decryption), the amount to
 shift is found by `self.amount`.
 
+## Encryptor
+
+Located in `src/ciphers/encryptor.rs`.
+
+This struct holds the data necessary to implement the types of ciphers described
+in the project paper. It takes a key, a key scheduling algorithm (that we each
+will create individually), and then implements Cipher so we can encrypt and
+decrypt using the parameters chosen.
+
+So far only encryption is implemented, but decryption is not quite ready. There
+are many similarities between the two functions, so I will likely separate out
+the common logic to a helper function somehow.
+
+## KeySchedule
+
+Located in `src/ciphers/mod.rs`.
+
+This is the function prototype for scheduling keys, and what every team member
+will create at least one unique implementation of. An example of a key schedule
+algorithm is simply a repeating key:
+
+```rust
+fn repeating_key(index: usize, key_length: usize, _plaintext_length: usize) -> usize {
+    index % key_length
+}
+```
+
+Everyone will need to make a similar function, and match the same function
+parameters and return type.
+
 ## Utils
 
 Located in `src/utils.rs`.
 
-Various handy, yet stand alone utility functions can go here. Future home of
-`Rng`? Currently there are two traits here: `NumToChar` and `CharToNum` that
-convert between our message space ("a-z ") and numbers (`u8`). These traits let
-you use rust native types like `char` and `u8` but extend the functionality.
+Various handy, yet stand alone utility functions can go here. Currently there
+are three helper traits here that mostly help with character <-> number
+conversions.
+
+The most handy trait here is `ShiftChar` that is implemented for char types.
+The ShiftChar trait gives char a method `shift(self, i8) -> char`. It handles
+the shift operation that we need to do during encryption and decryption, so that
+we can easily shift forward or backward (negative numbers). An example of using
+the shift method in ROT13:
+
+```rust
+fn encrypt(&self, plaintext: &str) -> String {
+    plaintext.chars().map(|c| c.shift(13)).collect()
+}
+
+fn decrypt(&self, ciphertext: &str) -> String {
+    ciphertext.chars().map(|c| c.shift(-13)).collect()
+}
+```
+
+`NumToChar` and `CharToNum` that convert between
+our message space ("a-z ") and numbers (`i8`). These traits let you use rust
+native types like `char` and `i8` but extend the functionality to match our
+encoding scheme.
 
 For example to get the number value of 'b': `'b'.to_num()` which should be 2. Or
 to get the character representation of 17: `17.to_char()`. Rust's type system

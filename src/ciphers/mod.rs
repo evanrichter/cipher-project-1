@@ -1,15 +1,31 @@
 //! Implementations of various ciphers.
 
+mod encryptor;
 mod rot13;
+
+pub use encryptor::Encryptor;
 pub use rot13::Rot13;
 
 /// The Cipher trait describes what every cipher needs to be able to do.
 pub trait Cipher {
     /// Encrypt the given plaintext and return a String
-    fn encrypt<'d>(&self, plaintext: &str) -> String;
-    /// Decrypt the given ciphertext and return a String
-    fn decrypt<'d>(&self, ciphertext: &str) -> String;
+    fn encrypt(&self, plaintext: &str) -> String;
+    /// Decrypt the given ciphertext and return a String.
+    fn decrypt(&self, ciphertext: &str) -> String;
 }
+
+/// Returns the index of the key to use when shifting plaintext into ciphertext.
+///
+/// Arguments are: `index: usize`, `key_length: usize`, `plaintext_length: usize`.
+///
+/// In the project description, this process is described as: each ciphertext symbol `c[i]` is the
+/// shift of the plaintext symbol `m[i]` by a number of position equal to one of the key symbols,
+/// which symbol being chosen according to an _undisclosed, deterministic, and not key-based_,
+/// scheduling algorithm that is a function of `i`, `t` and `L`, where:
+///   * `i` is the index being output to ciphertext
+///   * `t` is the key length
+///   * `L` is the length of the plaintext
+pub type KeySchedule = &'static dyn Fn(usize, usize, usize) -> usize;
 
 #[cfg(test)]
 pub mod testing {
@@ -28,7 +44,6 @@ pub mod testing {
 
             // generate plaintext, ciphertext, and then decrypt
             let plaintext = gen.generate_words(num_words);
-            println!("{}", plaintext);
             let ciphertext = cipher.encrypt(&plaintext);
             let decrypted = cipher.decrypt(&ciphertext);
 

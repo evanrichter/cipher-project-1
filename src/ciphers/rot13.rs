@@ -1,23 +1,16 @@
-use crate::utils::{CharToNum, NumToChar};
+use crate::utils::ShiftChar;
 use crate::Cipher;
 
+/// A simple ROT13 cipher.
 pub struct Rot13;
 
 impl Cipher for Rot13 {
-    fn encrypt<'d>(&self, plaintext: &str) -> String {
-        plaintext
-            .chars()
-            .map(|c| (c.to_num() + 13) % 27)
-            .map(|x| x.to_char())
-            .collect()
+    fn encrypt(&self, plaintext: &str) -> String {
+        plaintext.chars().map(|c| c.shift(13)).collect()
     }
 
-    fn decrypt<'d>(&self, ciphertext: &str) -> String {
-        ciphertext
-            .chars()
-            .map(|c| (c.to_num() + (27 - 13)) % 27)
-            .map(|x| x.to_char())
-            .collect()
+    fn decrypt(&self, ciphertext: &str) -> String {
+        ciphertext.chars().map(|c| c.shift(-13)).collect()
     }
 }
 

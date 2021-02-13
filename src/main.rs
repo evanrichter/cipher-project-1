@@ -2,11 +2,13 @@
 mod ciphers;
 mod dict;
 mod gen;
+mod rng;
 mod utils;
 
 // these "use" statements bring the structs into scope
 use dict::Dictionary;
 use gen::Generator;
+use rng::Rng;
 
 // this "use" statement brings the trait into scope so we can use its methods
 use ciphers::Cipher;
@@ -19,16 +21,16 @@ fn main() -> anyhow::Result<()> {
 
     let mut gen = Generator::with_dict(&dict);
 
-    println!("generating 5 sentences with 10 words each then doing ROT13...\n");
+    println!("generating 5 sentences with 10 words each then encrypting...\n");
 
-    let rot13 = ciphers::Rot13;
+    let cipher = ciphers::Encryptor::repeating_key(&[0, 1, -1], Rng::default());
     for _ in 0..5 {
         let plaintext = gen.generate_words(10);
-        let ciphertext = rot13.encrypt(&plaintext);
-        let decrypted = rot13.decrypt(&ciphertext);
+        let ciphertext = cipher.encrypt(&plaintext);
+        let decrypted = cipher.decrypt(&ciphertext);
 
         println!("plaintext: {}", plaintext);
-        println!("    rot13: {}", ciphertext);
+        println!("encrypted: {}", ciphertext);
         println!("decrypted: {}", decrypted);
         println!();
     }
