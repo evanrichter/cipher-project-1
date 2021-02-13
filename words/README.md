@@ -2,6 +2,11 @@
 
 Sample wordlists that can be used for testing.
 
+## Project Wordlists
+
+- plaintext\_dictionary\_test1.txt
+- word\_dictionary\_test2.txt
+
 ## Sources
 
 - [google-10000-english-usa-no-swears.txt](https://github.com/first20hours/google-10000-english/raw/master/google-10000-english-usa-no-swears.txt)
