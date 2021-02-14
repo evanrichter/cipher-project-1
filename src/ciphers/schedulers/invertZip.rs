@@ -6,7 +6,7 @@ pub struct InvertZip {
 }
 use super::KeySchedule;
 
-impl super::KeySchedule for invertZip {
+impl super::KeySchedule for InvertZip {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
         let last_char = key_length;
         let counter = 0;
@@ -16,10 +16,15 @@ impl super::KeySchedule for invertZip {
         } else if index >= self.offset && (counter % 2 == 0) {
             // next character in key
             index
+            counter += 1
         } else if index >= self.offset && (counter % 2 != 0) {
             // next last character in key
             let inverted_index = last_char - index;
             inverted_index
+            counter += 1
+        } else {
+            index
+            counter += 1
         }
     }
 }
@@ -32,7 +37,7 @@ mod tests {
     fn simple() {
         let key = b"ABCDEFG";
         let effective_key = b"AGBFCED";
-        let invertZip = invertZip {
+        let invertzip = InvertZip {
             offset: 0,
         };
 
@@ -42,7 +47,6 @@ mod tests {
                 let computed = invertZip.schedule(index, key.len(), 1000);
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
-                counter += 1;
             }
         }
     }

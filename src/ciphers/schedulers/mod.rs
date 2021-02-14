@@ -1,11 +1,11 @@
 //! Definition of [`KeySchedule`] and various implementations of key scheduling.
 
 mod aab;
-mod invertZip;
+mod invertzip;
 mod repeatingkey;
 
 pub use aab::Aab;
-pub use invertZip::InvertZip;
+pub use invertzip::InvertZip;
 pub use repeatingkey::RepeatingKey;
 
 /// Trait for implementing key scheduling.
