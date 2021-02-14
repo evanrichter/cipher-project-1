@@ -13,10 +13,10 @@ impl super::KeySchedule for InvertZip {
         if index < self.offset {
             // before the zipper starts
             index
-        } else if index >= self.offset && ((index-offset) % 2 == 0) {
+        } else if index >= self.offset && ((index - self.offset) % 2 == 0) {
             // next character in key
             index
-        } else if index >= self.offset && ((index - offset) % 2 != 0) {
+        } else if index >= self.offset && ((index - self.offset) % 2 != 0) {
             // next last character in key
             let inverted_index = last_char - index;
             inverted_index
