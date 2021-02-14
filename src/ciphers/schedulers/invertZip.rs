@@ -13,18 +13,15 @@ impl super::KeySchedule for InvertZip {
         if index < self.offset {
             // before the zipper starts
             index
-        } else if index >= self.offset && (counter % 2 == 0) {
+        } else if index >= self.offset && ((index-offset) % 2 == 0) {
             // next character in key
             index
-            counter += 1
-        } else if index >= self.offset && (counter % 2 != 0) {
+        } else if index >= self.offset && ((index - offset) % 2 != 0) {
             // next last character in key
             let inverted_index = last_char - index;
             inverted_index
-            counter += 1
         } else {
             index
-            counter += 1
         }
     }
 }
@@ -44,7 +41,7 @@ mod tests {
         let mut index = 0;
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = invertZip.schedule(index, key.len(), 1000);
+                let computed = invertzip.schedule(index, key.len(), 1000);
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
             }
