@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("generating 5 sentences with 10 words each then encrypting...\n");
 
-    let cipher = ciphers::Encryptor::repeating_key(&[0, 1, -1], Rng::default());
+    let cipher = ciphers::Encryptor::repeating_key(vec![0, 1, -1], Rng::default());
     for _ in 0..5 {
         let plaintext = gen.generate_words(10);
         let ciphertext = cipher.encrypt(&plaintext);

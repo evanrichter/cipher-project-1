@@ -1,16 +1,18 @@
-use crate::ciphers::{Cipher, KeySchedule};
 use crate::ciphers::schedulers::RepeatingKey;
-use crate::rng::Rng;
-use crate::utils::{NumToChar, ShiftChar};
+use crate::ciphers::{Cipher, KeySchedule};
+use crate::rng::{Rng, FromRng};
+use crate::utils::{NumToChar, ShiftChar, reduce_key};
 
 use std::cell::Cell;
+use std::fmt::Debug;
 
 /// The main encryption scheme described in the project description
-pub struct Encryptor<'k, K: KeySchedule> {
+#[derive(Debug)]
+pub struct Encryptor<K: KeySchedule + Debug> {
     /// The key chosen for this encryptor.
     ///
     /// The key length is called `t` in the description and is guaranteed to be between 1 and 24.
-    key: &'k [i8],
+    key: Vec<i8>,
     /// The scheduling algorithm for this encryptor
     keyschedule: K,
     /// Rng to insert random characters when needed
@@ -32,10 +34,11 @@ pub struct Encryptor<'k, K: KeySchedule> {
     prev_plaintext_length: Cell<Option<usize>>,
 }
 
-impl<'k, K: KeySchedule> Encryptor<'k, K> {
+impl<K: KeySchedule + Debug> Encryptor<K> {
     /// Create a new Encryptor configured with the given key, [`KeySchedule`], and [`Rng`].
     #[allow(dead_code)]
-    pub fn new(key: &'k [i8], keyschedule: K, rng: Rng) -> Self {
+    pub fn new(mut key: Vec<i8>, keyschedule: K, rng: Rng) -> Self {
+        reduce_key(&mut key);
         Self {
             key,
             keyschedule,
@@ -45,9 +48,10 @@ impl<'k, K: KeySchedule> Encryptor<'k, K> {
     }
 }
 
-impl<'k> Encryptor<'k, RepeatingKey> {
+impl Encryptor<RepeatingKey> {
     /// Encryptor with a simple repeating key scheduler.
-    pub fn repeating_key(key: &'k [i8], rng: Rng) -> Self {
+    pub fn repeating_key(mut key: Vec<i8>, rng: Rng) -> Self {
+        reduce_key(&mut key);
         Self {
             key,
             keyschedule: RepeatingKey,
@@ -57,13 +61,14 @@ impl<'k> Encryptor<'k, RepeatingKey> {
     }
 }
 
-impl<'k, K: KeySchedule> Cipher for Encryptor<'k, K> {
+impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
     fn encrypt(&self, plaintext: &str) -> String {
         // get keylen and plaintext len
         let keylen = self.key.len();
         let ptlen = plaintext.len();
 
-        // assert that we don't encrypt two things in a row
+        // stash the plaintext length in our "side channel" and also assert that we don't encrypt
+        // two things in a row
         assert!(
             self.prev_plaintext_length.replace(Some(ptlen)).is_none(),
             "must decrypt after encrypt"
@@ -109,11 +114,71 @@ impl<'k, K: KeySchedule> Cipher for Encryptor<'k, K> {
         cipher
     }
 
-    fn decrypt(&self, _ciphertext: &str) -> String {
-        let _ptlen = self
+    fn decrypt(&self, ciphertext: &str) -> String {
+        // get keylen
+        let keylen = self.key.len();
+
+        // get plaintext length over our "side channel", replacing with None
+        let ptlen = self
             .prev_plaintext_length
             .replace(None)
             .expect("encrypt must be called before decrypt");
-        String::from("asdf")
+
+        // create an empty string to fill with plaintext
+        let mut plaintext = String::new();
+
+        // read every byte of ciphertext
+        'decryption: for (index, cipher) in ciphertext.chars().enumerate() {
+            // get key index to use as shift.
+            let index = self.keyschedule.schedule(index, keylen, ptlen);
+
+            // get the shift amount from the key, or discard the character if the character was
+            // generated randomly.
+            let shift = match self.key.get(index) {
+                Some(s) => *s,
+                None => continue 'decryption,
+            };
+
+            // apply the shift amount in reverse because we are decrypting not encrypting.
+            let plain_char = cipher.shift(-shift);
+
+            // push the decrypted character into plaintext string
+            plaintext.push(plain_char);
+        }
+
+        // return plaintext
+        plaintext
+    }
+}
+
+impl<K: KeySchedule + Debug + FromRng> FromRng for Encryptor<K> {
+    fn from_rng(rng: &mut Rng) -> Self {
+        // generate a friendly key
+        let key = FromRng::from_rng(rng);
+
+        // generate a keyschedule from rng
+        let keyschedule = K::from_rng(rng);
+
+        // spin off another rng from this one
+        let rng = FromRng::from_rng(rng);
+
+        Self {
+            key,
+            keyschedule,
+            rng,
+            prev_plaintext_length: Cell::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ciphers::testing::stresstest;
+
+    #[test]
+    fn repeating_key_stress() {
+        let encryptor = Encryptor::repeating_key(vec![1, 2, 3, 4, 5, 6, 7, 8, 9], Rng::default());
+        stresstest(encryptor, 10000).unwrap();
     }
 }

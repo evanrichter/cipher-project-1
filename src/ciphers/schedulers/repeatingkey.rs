@@ -6,6 +6,7 @@
 ///  Plaintext:     RISE AND SHINE MISTER FREEMAN RISE AND SHINE
 /// Shifted by:     HEADCRABHEADCRABHEADCRABHEADCRABHEADCRABHEAD
 /// ```
+#[derive(Debug)]
 pub struct RepeatingKey;
 
 impl super::KeySchedule for RepeatingKey {

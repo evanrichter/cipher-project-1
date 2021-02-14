@@ -84,3 +84,10 @@ mod tests {
         assert_eq!('a'.shift(-14 - 27 * 4), 'n');
     }
 }
+
+/// Normalizes a key with arbitrary shift amounts the smallest positive shift amounts.
+pub fn reduce_key(key: &mut Vec<i8>) {
+    for k in key.iter_mut() {
+        *k = k.to_char().to_num();
+    }
+}

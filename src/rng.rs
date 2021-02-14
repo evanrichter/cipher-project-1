@@ -88,6 +88,66 @@ impl Rng {
     }
 }
 
+/// Types that can be generated pseudo-randomly implement `FromRng`.
+///
+/// This will enable random testing so we won't have to manually instantiate parameters on types
+/// that implement [`Cipher`][`crate::ciphers::Cipher`], or
+/// [`KeySchedule`][`crate::ciphers::schedulers::KeySchedule`] for example.
+pub trait FromRng {
+    fn from_rng(rng: &mut Rng) -> Self;
+}
+
+impl FromRng for Rng {
+    // no idea if this is smart or not, but it's probably ok
+    fn from_rng(rng: &mut Rng) -> Self {
+        // send the incoming rng x state directly to y
+        let y = rng.next();
+        rng.next();
+        rng.next();
+        rng.next();
+        rng.next();
+        let x = rng.next();
+
+        // spin off the two rngs. hopefully they diverge
+        let mut newrng = Self { x, y };
+        for _ in 0..1000 {
+            rng.next();
+            newrng.next();
+        }
+
+        newrng
+    }
+}
+
+impl FromRng for Vec<i8> {
+    fn from_rng(rng: &mut Rng) -> Self {
+        let mut x = 0;
+        loop {
+            if x == 128 {
+                return vec![1, 2, 3, 4];
+            }
+            x += 1;
+
+            // generate a keylength between 1 and 24
+            let keylen = rng.next() as usize % 24 + 1;
+
+            // generate and fill the key values with random values
+            let mut key = Vec::with_capacity(keylen);
+            for _ in 0..keylen {
+                key.push(rng.next() as i8);
+            }
+
+            // make sure key is friendly
+            crate::utils::reduce_key(&mut key);
+
+            // return key if any are not zero
+            if key.iter().any(|k| k != &0) {
+                return key;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

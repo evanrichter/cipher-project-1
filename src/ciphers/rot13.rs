@@ -2,6 +2,7 @@ use crate::utils::ShiftChar;
 use crate::Cipher;
 
 /// A simple ROT13 cipher.
+#[derive(Debug)]
 pub struct Rot13;
 
 impl Cipher for Rot13 {
