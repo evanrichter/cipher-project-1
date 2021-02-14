@@ -1,4 +1,5 @@
-// this has no fields because there are no configuration options
+// the goal of this is to "zipper" the original key into an effective key
+// for example: ABCDEF would turn into AFBECD
 #[derive(Debug)]
 pub struct invertZip {
     offset: usize,
