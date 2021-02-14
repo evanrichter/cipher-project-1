@@ -3,6 +3,7 @@
 ///
 /// It is called "AAB" scheduler because if the key is "AB" then this scheduler could produce an
 /// effective key of "AAB"
+#[derive(Debug)]
 pub struct Aab {
     /// Number of characters to repeat in the key
     num_chars: usize,
@@ -31,6 +32,16 @@ impl KeySchedule for Aab {
         } else {
             // after repeated range
             index - self.num_chars * self.num_reps
+        }
+    }
+}
+
+impl crate::rng::FromRng for Aab {
+    fn from_rng(rng: &mut crate::rng::Rng) -> Self {
+        Self {
+            num_chars: rng.next() as usize % 32,
+            num_reps: rng.next() as usize % 8,
+            offset: rng.next() as usize % 8,
         }
     }
 }
