@@ -1,7 +1,7 @@
 // the goal of this is to "zipper" the original key into an effective key
 // for example: ABCDEF would turn into AFBECD
 #[derive(Debug)]
-pub struct invertZip {
+pub struct InvertZip {
     offset: usize,
 }
 use super::KeySchedule;
