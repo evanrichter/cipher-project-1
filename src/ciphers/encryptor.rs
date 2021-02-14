@@ -1,5 +1,5 @@
-use crate::ciphers::{Cipher, KeySchedule};
 use crate::ciphers::schedulers::RepeatingKey;
+use crate::ciphers::{Cipher, KeySchedule};
 use crate::rng::Rng;
 use crate::utils::{NumToChar, ShiftChar};
 
@@ -63,7 +63,8 @@ impl<'k, K: KeySchedule> Cipher for Encryptor<'k, K> {
         let keylen = self.key.len();
         let ptlen = plaintext.len();
 
-        // assert that we don't encrypt two things in a row
+        // stash the plaintext length in our "side channel" and also assert that we don't encrypt
+        // two things in a row
         assert!(
             self.prev_plaintext_length.replace(Some(ptlen)).is_none(),
             "must decrypt after encrypt"
@@ -109,11 +110,39 @@ impl<'k, K: KeySchedule> Cipher for Encryptor<'k, K> {
         cipher
     }
 
-    fn decrypt(&self, _ciphertext: &str) -> String {
-        let _ptlen = self
+    fn decrypt(&self, ciphertext: &str) -> String {
+        // get keylen
+        let keylen = self.key.len();
+
+        // get plaintext length over our "side channel", replacing with None
+        let ptlen = self
             .prev_plaintext_length
             .replace(None)
             .expect("encrypt must be called before decrypt");
-        String::from("asdf")
+
+        // create an empty string to fill with plaintext
+        let mut plaintext = String::new();
+
+        // read every byte of ciphertext
+        'decryption: for (index, cipher) in ciphertext.chars().enumerate() {
+            // get key index to use as shift.
+            let index = self.keyschedule.schedule(index, keylen, ptlen);
+
+            // get the shift amount from the key, or discard the character if the character was
+            // generated randomly.
+            let shift = match self.key.get(index) {
+                Some(s) => *s,
+                None => continue 'decryption,
+            };
+
+            // apply the shift amount in reverse because we are decrypting not encrypting.
+            let plain_char = cipher.shift(-shift);
+
+            // push the decrypted character into plaintext string
+            plaintext.push(plain_char);
+        }
+
+        // return plaintext
+        plaintext
     }
 }
