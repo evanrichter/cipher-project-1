@@ -9,7 +9,6 @@ use super::KeySchedule;
 impl super::KeySchedule for InvertZip {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
         let last_char = key_length;
-        let counter = 0;
         if index < self.offset {
             // before the zipper starts
             index
