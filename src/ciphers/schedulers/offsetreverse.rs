@@ -1,62 +1,36 @@
+// 
 // the goal of this is to reverse the original key until the offset 
 // and then continue with the original key
 // this leads to variable effective key length to confuse key length guessing
-// for example: ABCDEF with offset 2 would turn into FEDCABCDEF
+//
+//
+// For Example: ABCDEF with offset 2 would turn into FEABCDEF
+//
+//
+//
+
 #[derive(Debug)]
-pub struct InvertZip {
+pub struct OffsetReverse {
     offset: usize,
 }
 use super::KeySchedule;
 
-impl super::KeySchedule for InvertZip {
+impl super::KeySchedule for OffsetReverse {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
         //get the index value of the last character for zero based array
         let last_char = key_length - 1;
         let eff_key_length = key_length + self.offset;
-        //let eff_index = index % key_length;
-        //let inverted_index = last_char - eff_index;
-        
-        println!("Index is {}", index);
-        //println!("Inverted Index is {}", inverted_index);
-        //println!("eff_index is {}", eff_index);
-        println!("watch: {}", index % eff_key_length);
 
-
+        //Before the offset
         if index % eff_key_length < self.offset {
-            println!("here1");
+            //calculate the inverted index (index starting from the last character)
             let inverted_index = last_char - (index % eff_key_length);
             inverted_index
         } else {
-            println!("here2");
+            //calculate the index adjusting for any previous offset
             let adj_index = (index % eff_key_length) - self.offset;
             adj_index
         }
-
-
-
-/*
-        if self.offset > index % eff_key_length {
-            if eff_index >= self.offset {
-                println!("here1");
-                inverted_index + self.offset
-            } else {
-                println!("here2");
-                inverted_index
-            }
-        
-        } else {
-            // after repeated range
-            //println!("this is the else2. Index is {} and {}",index, eff_index);
-            //println!("eff {}", eff_key_length);
-            if eff_index >= self.offset {
-                println!("here3");
-                eff_index - self.offset
-            } else {
-                println!("here4");
-                eff_index + (self.offset % last_char)
-            }
-        }
-    */
     }
 }
 
@@ -68,7 +42,7 @@ mod tests {
     fn simple() {
         let key = b"ABCDEF";
         let effective_key = b"ABCDEF";
-        let invertzip = InvertZip {
+        let offsetreverse = OffsetReverse {
             offset: 0,
         };
 
@@ -89,7 +63,7 @@ mod tests {
     fn with_offset() {
         let key = b"ABCDEF";
         let effective_key = b"FEDABCDEF";
-        let invertzip = InvertZip {
+        let offsetreverse = OffsetReverse {
             offset: 3,
         };
 
