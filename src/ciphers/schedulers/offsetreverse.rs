@@ -13,6 +13,7 @@
 pub struct OffsetReverse {
     offset: usize,
 }
+
 use super::KeySchedule;
 
 impl super::KeySchedule for OffsetReverse {
@@ -51,7 +52,7 @@ mod tests {
         println!("effective key len is {}",effective_key.len());
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = invertzip.schedule(index, key.len(), 1000);
+                let computed = offsetreverse.schedule(index, key.len(), 1000);
                 println!("{}", key[computed]);
                 println!("{}", effective_key[expected]);
                 assert_eq!(effective_key[expected], key[computed]);
@@ -72,7 +73,28 @@ mod tests {
         println!("effective key len is {}",effective_key.len());
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = invertzip.schedule(index, key.len(), 1000);
+                let computed = offsetreverse.schedule(index, key.len(), 1000);
+                println!("{}", key[computed]);
+                println!("{}", effective_key[expected]);
+                assert_eq!(effective_key[expected], key[computed]);
+                index += 1;
+            }
+        }    
+    }
+    #[test]
+    fn full_reverse() {
+        let key = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let effective_key = b"ZYXWVUTSRQPONMLKJIHGFEDCBAABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let offsetreverse = OffsetReverse {
+            offset: 26,
+        };
+
+        let mut index = 0;
+        println!("key len is {}", key.len());
+        println!("effective key len is {}",effective_key.len());
+        for _ in 0..500 {
+            for expected in 0..effective_key.len() {
+                let computed = offsetreverse.schedule(index, key.len(), 1000);
                 println!("{}", key[computed]);
                 println!("{}", effective_key[expected]);
                 assert_eq!(effective_key[expected], key[computed]);
