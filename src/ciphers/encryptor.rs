@@ -1,7 +1,7 @@
 use crate::ciphers::schedulers::RepeatingKey;
 use crate::ciphers::{Cipher, KeySchedule};
-use crate::rng::{Rng, FromRng};
-use crate::utils::{NumToChar, ShiftChar, reduce_key};
+use crate::rng::{FromRng, Rng};
+use crate::utils::{reduce_key, NumToChar, ShiftChar};
 
 use std::cell::Cell;
 use std::fmt::Debug;

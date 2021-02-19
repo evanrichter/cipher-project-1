@@ -1,9 +1,11 @@
 //! Definition of [`KeySchedule`] and various implementations of key scheduling.
 
 mod aab;
+mod offsetreverse;
 mod repeatingkey;
 
 pub use aab::Aab;
+pub use offsetreverse::OffsetReverse;
 pub use repeatingkey::RepeatingKey;
 
 /// Trait for implementing key scheduling.
