@@ -1,3 +1,5 @@
+use super::KeySchedule;
+
 /// This scheduler repeats the first half of the key, then runs through the whole key. The hope is
 /// to confuse keylength guessing.
 ///
@@ -6,14 +8,12 @@
 #[derive(Debug)]
 pub struct Aab {
     /// Number of characters to repeat in the key
-    num_chars: usize,
+    pub num_chars: usize,
     /// Number of times to repeat the block of characters
-    num_reps: usize,
+    pub num_reps: usize,
     /// Offset into the original key to start the repetition
-    offset: usize,
+    pub offset: usize,
 }
-
-use super::KeySchedule;
 
 impl KeySchedule for Aab {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {

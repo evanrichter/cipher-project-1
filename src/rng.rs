@@ -148,6 +148,12 @@ impl FromRng for Vec<i8> {
     }
 }
 
+impl<A: FromRng, B: FromRng> FromRng for (A, B) {
+    fn from_rng(rng: &mut Rng) -> Self {
+        (A::from_rng(rng), B::from_rng(rng))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
