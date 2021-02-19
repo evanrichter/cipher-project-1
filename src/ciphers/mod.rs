@@ -21,7 +21,7 @@ pub mod testing {
     use super::*;
     use crate::dict::Dictionary;
     use crate::gen::Generator;
-    use crate::rng::{Rng, FromRng};
+    use crate::rng::{FromRng, Rng};
 
     use std::fmt::Debug;
 
@@ -43,7 +43,7 @@ pub mod testing {
         // decrypted text must always match original plaintext
         assert_eq!(plaintext, decrypted);
     }
-    
+
     pub fn stresstest<T: Cipher + Debug>(cipher: T, cycles: usize) -> anyhow::Result<()> {
         let words = std::fs::read_to_string("words/default.txt")?;
         let dict = Dictionary::from_string(words);
