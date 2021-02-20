@@ -98,3 +98,16 @@ pub fn reduce_key(key: &mut Key) {
         *k = k.to_char().to_num();
     }
 }
+
+/// Translate an entire &str to a Vec of bytes to more easily perform math.
+#[allow(dead_code)]
+pub fn str_to_bytes(s: &str) -> Vec<u8> {
+    s.chars().map(|c| c.to_num() as u8).collect()
+}
+
+/// Translate a slice of bytes back to a &str for presentation. For example, printing the recovered
+/// plaintext as a String.
+#[allow(dead_code)]
+pub fn bytes_to_str(bytes: &[u8]) -> String {
+    bytes.iter().map(|&b| (b as i8).to_char()).collect()
+}
