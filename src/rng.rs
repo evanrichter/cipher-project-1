@@ -1,3 +1,7 @@
+//! Module for random number generation.
+
+use crate::utils::Key;
+
 /// This is [RomuDuo]
 ///
 /// It generates u64 and is fast, not cryptographically secure, but that's not needed to just
@@ -119,7 +123,7 @@ impl FromRng for Rng {
     }
 }
 
-impl FromRng for Vec<i8> {
+impl FromRng for Key {
     fn from_rng(rng: &mut Rng) -> Self {
         let mut x = 0;
         loop {

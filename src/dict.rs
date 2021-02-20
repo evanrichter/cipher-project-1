@@ -1,3 +1,5 @@
+//! Module for [`Dictionary`].
+
 /// A dictionary will hold an alphabetized wordlist. Each word only consists of lowercase ASCII
 /// alphabetic characters.
 #[derive(Clone, Debug)]

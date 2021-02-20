@@ -1,3 +1,5 @@
+//! Module for [`Generator`].
+
 use crate::dict::Dictionary;
 use crate::rng::Rng;
 
