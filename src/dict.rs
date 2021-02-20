@@ -45,6 +45,23 @@ impl Dictionary {
     pub fn len(&self) -> usize {
         self.words.len()
     }
+
+    /// Find the closest word by Levenshtein distance.
+    ///
+    /// Returns (dictionary_word, edit_distance)
+    ///
+    /// The lower the score, the fewer edits needed to match the dictionary word.
+    pub fn best_levenshtein(&self, word: &str) -> (&str, usize) {
+        // iterate over words in dictionary
+        self.words
+            .iter()
+            .map(|s| s.as_str())
+            // create tuples of &str and the respective levenshtein distance
+            .map(|s| (s, strsim::levenshtein(word, s)))
+            // return the best word-score tuple
+            .min_by_key(|x| x.1)
+            .expect("spell correct with an empty Dictionary")
+    }
 }
 
 // Tests for the Dictionary type. These get run with `cargo test`
@@ -105,5 +122,17 @@ mod tests {
         assert_eq!(d.words[1], "def");
         assert_eq!(d.words[2], "ghi");
         assert_eq!(d.words[3], "jkl");
+    }
+
+    #[test]
+    fn levenshtein() {
+        let s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(s);
+
+        assert_eq!(d.best_levenshtein("acb"), ("abc", 2));
+        assert_eq!(d.best_levenshtein("de"), ("def", 1));
+        assert_eq!(d.best_levenshtein("ghi"), ("ghi", 0));
+        assert_eq!(d.best_levenshtein(" jkl "), ("jkl", 2));
+        assert_eq!(d.best_levenshtein("abc def"), ("abc", 4));
     }
 }
