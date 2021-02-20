@@ -1,3 +1,5 @@
+//! Module for utilities used throughout the cracking tool.
+
 /// The alphabet in the message space
 pub const ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz ";
 
@@ -85,8 +87,13 @@ mod tests {
     }
 }
 
+/// The key type defines what format various functions expect the key to be in.
+///
+/// A [`Vec`] of `i8` representing shift amounts that may be positive or negative.
+pub type Key = Vec<i8>;
+
 /// Normalizes a key with arbitrary shift amounts the smallest positive shift amounts.
-pub fn reduce_key(key: &mut Vec<i8>) {
+pub fn reduce_key(key: &mut Key) {
     for k in key.iter_mut() {
         *k = k.to_char().to_num();
     }

@@ -1,17 +1,19 @@
 // these "mod" statements bring in ciphers/mod.rs, dict.rs, gen.rs, and utils.rs files
 mod ciphers;
+mod crack;
 mod dict;
 mod gen;
 mod rng;
 mod utils;
 
 // these "use" statements bring the structs into scope
-use dict::Dictionary;
-use gen::Generator;
-use rng::Rng;
+pub use ciphers::Encryptor;
+pub use dict::Dictionary;
+pub use gen::Generator;
+pub use rng::Rng;
 
-// this "use" statement brings the trait into scope so we can use its methods
-use ciphers::Cipher;
+// this "use" statement brings the traits into scope so we can use their methods
+pub use ciphers::{Cipher, KeySchedule};
 
 fn main() -> anyhow::Result<()> {
     let words = std::fs::read_to_string("words/default.txt")?;

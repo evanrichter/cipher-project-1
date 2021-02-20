@@ -1,7 +1,7 @@
 use crate::ciphers::schedulers::RepeatingKey;
 use crate::ciphers::{Cipher, KeySchedule};
 use crate::rng::{FromRng, Rng};
-use crate::utils::{reduce_key, NumToChar, ShiftChar};
+use crate::utils::{reduce_key, Key, NumToChar, ShiftChar};
 
 use std::cell::Cell;
 use std::fmt::Debug;
@@ -12,7 +12,7 @@ pub struct Encryptor<K: KeySchedule + Debug> {
     /// The key chosen for this encryptor.
     ///
     /// The key length is called `t` in the description and is guaranteed to be between 1 and 24.
-    key: Vec<i8>,
+    key: Key,
     /// The scheduling algorithm for this encryptor
     keyschedule: K,
     /// Rng to insert random characters when needed
@@ -37,7 +37,7 @@ pub struct Encryptor<K: KeySchedule + Debug> {
 impl<K: KeySchedule + Debug> Encryptor<K> {
     /// Create a new Encryptor configured with the given key, [`KeySchedule`], and [`Rng`].
     #[allow(dead_code)]
-    pub fn new(mut key: Vec<i8>, keyschedule: K, rng: Rng) -> Self {
+    pub fn new(mut key: Key, keyschedule: K, rng: Rng) -> Self {
         reduce_key(&mut key);
         Self {
             key,
@@ -50,7 +50,7 @@ impl<K: KeySchedule + Debug> Encryptor<K> {
 
 impl Encryptor<RepeatingKey> {
     /// Encryptor with a simple repeating key scheduler.
-    pub fn repeating_key(mut key: Vec<i8>, rng: Rng) -> Self {
+    pub fn repeating_key(mut key: Key, rng: Rng) -> Self {
         reduce_key(&mut key);
         Self {
             key,
