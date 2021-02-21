@@ -5,7 +5,7 @@
 #[allow(dead_code)]
 pub fn keylength_guesses(ciphertext: &[u8]) -> Vec<usize> {
     const KEYSIZE_LO: usize = 4;
-    const KEYSIZE_HI: usize = 64;
+    const KEYSIZE_HI: usize = 45;
 
     let mut keysizes: Vec<(usize, f64)> = Vec::with_capacity(KEYSIZE_HI);
 
@@ -15,6 +15,11 @@ pub fn keylength_guesses(ciphertext: &[u8]) -> Vec<usize> {
     }
 
     keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+
+    for k in keysizes.iter() {
+        println!("{}  {}", k.0, k.1);
+    }
+
     keysizes
         .into_iter()
         .take(30)
@@ -52,6 +57,7 @@ pub fn hamming_distance(a: &[u8], b: &[u8]) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rng::FromRng;
     use crate::Cipher;
     use crate::Encryptor;
     use crate::KeySchedule;
@@ -108,46 +114,46 @@ mod tests {
     #[test]
     fn simple_repeating_key() {
         // pick a keylen, and period
-        const KEYLEN: usize = 13;
+        let keylen = 13;
 
         // configure the scheduler to be repeating key
         let sched = RepeatingKey;
 
         // since the key is very simply repeating, the expected keylen is the same
-        let expected_keylen = KEYLEN;
+        let expected_keylen = keylen;
 
-        expected_keylen_rank(KEYLEN, sched, expected_keylen);
+        expected_keylen_rank(keylen, sched, expected_keylen);
     }
 
     #[test]
     fn rand_with_overwrite() {
         // pick a keylen, and period
-        const KEYLEN: usize = 7;
-        const PERIOD: usize = 9;
+        let keylen = 7;
+        let period = 9;
 
         // configure the random char insertions
         let rand_with_overwrite = PeriodicRand {
-            period: PERIOD,
+            period,
             start: 9,
             overwrite: true,
         };
 
         // since we are _overwriting_ the key every 9 times, but the underlying key still repeats
         // every 7, I would expect we could crack this ciphertext using a keylength of 7 still.
-        let expected_keylen = KEYLEN;
+        let expected_keylen = keylen;
 
-        expected_keylen_rank(KEYLEN, rand_with_overwrite, expected_keylen);
+        expected_keylen_rank(keylen, rand_with_overwrite, expected_keylen);
     }
 
     #[test]
     fn rand_with_insert() {
         // pick a keylen, and period
-        const KEYLEN: usize = 7;
-        const PERIOD: usize = 9;
+        let keylen = 7;
+        let period = 4;
 
         // configure the random char insertions
         let inserted_rand = PeriodicRand {
-            period: PERIOD,
+            period,
             start: 6,
             overwrite: false,
         };
@@ -155,10 +161,10 @@ mod tests {
         // since we are _inserting_ a random char into the key every 9 times, but the underlying
         // key still repeats every 7, I would expect the effective key (the pattern that actually
         // repeats exactly) to be the Least Common Multiple of 7 and 9, or 63
-        let expected_keylen = lcm(KEYLEN, PERIOD);
-        assert_eq!(expected_keylen, 63);
+        let expected_keylen = lcm(keylen, period);
+        assert_eq!(expected_keylen, 28);
 
-        expected_keylen_rank(KEYLEN, inserted_rand, expected_keylen);
+        expected_keylen_rank(keylen, inserted_rand, expected_keylen);
     }
 
     /// least common multiple
@@ -184,6 +190,65 @@ mod tests {
 
             max = min;
             min = res;
+        }
+    }
+
+    /// stress testing keylength guessing
+    #[test]
+    fn stresstest() {
+        let mut rng = Rng::default();
+
+        // plaintext generator
+        let words = std::fs::read_to_string("words/default.txt").unwrap();
+        let dict = crate::Dictionary::from_string(words);
+        let mut gen = crate::Generator::with_dict(&dict);
+
+        // reusable Vec for key
+        let mut key = Vec::new();
+
+        for x in 0..5000 {
+            println!("succeeded: {}", x);
+            // choose a keylength between 8 and 40
+            let keylen = rng.next() % 32 + 8;
+
+            // build the key
+            for _ in 0..keylen {
+                key.push(rng.next() as u8 as i8);
+            }
+
+            // build the plaintext
+            let num_words = rng.next() as usize % 256 + 100;
+            dbg!(num_words);
+            let plaintext = gen.generate_words(num_words);
+
+            // create the encryptor
+            // TODO: generate a random scheduler
+            let enc_rng = FromRng::from_rng(&mut rng);
+            let encryptor = Encryptor::new(key.clone(), RepeatingKey, enc_rng);
+
+            // encrypt to ciphertext
+            let ciphertext = encryptor.encrypt(&plaintext);
+
+            // get keylength guesses
+            let ciphertext = crate::utils::str_to_bytes(&ciphertext);
+            dbg!(keylen);
+            let guesses = keylength_guesses(&ciphertext);
+
+            // count how many integer multiples (including exact matches) of the expected keylength are
+            // in the top results
+            let integer_multiples = guesses
+                .iter()
+                // only look at the top 5 guesses
+                .take(15)
+                // filter where the expected keylength is a factor of the guess
+                .filter(|&&guess| guess == lcm(guess, keylen as usize))
+                // count how many are left
+                .count();
+
+            assert!(integer_multiples > 0, "multiple of keylength not in top 5");
+
+            // clear the key contents (but keeps allocation)
+            key.clear();
         }
     }
 }
