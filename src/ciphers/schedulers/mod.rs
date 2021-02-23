@@ -4,11 +4,13 @@ mod aab;
 mod offsetreverse;
 mod periodicrand;
 mod repeatingkey;
+mod Lengthmod;
 
 pub use aab::Aab;
 pub use offsetreverse::OffsetReverse;
 pub use periodicrand::PeriodicRand;
 pub use repeatingkey::RepeatingKey;
+pub use Lengthmod::Lengthmod;
 
 /// Trait for implementing key scheduling.
 pub trait KeySchedule {
