@@ -16,8 +16,8 @@ pub use rng::Rng;
 pub use ciphers::{Cipher, KeySchedule};
 
 fn main() -> anyhow::Result<()> {
-    let words = std::fs::read_to_string("words/default.txt")?;
-    let dict = Dictionary::from_string(words);
+    let mut words = std::fs::read_to_string("words/default.txt")?;
+    let dict = Dictionary::from_string(&mut words);
 
     println!("{} words in dictionary", dict.len());
 

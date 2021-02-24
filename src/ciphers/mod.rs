@@ -45,8 +45,8 @@ pub mod testing {
     }
 
     pub fn stresstest<T: Cipher + Debug>(cipher: T, cycles: usize) -> anyhow::Result<()> {
-        let words = std::fs::read_to_string("words/default.txt")?;
-        let dict = Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt")?;
+        let dict = Dictionary::from_string(&mut words);
         let mut gen = Generator::with_dict(&dict);
 
         for _ in 0..cycles {
@@ -59,8 +59,8 @@ pub mod testing {
     pub fn randomized_stresstest<T: Cipher + FromRng + Debug>(cycles: usize) -> anyhow::Result<()> {
         let mut rng = Rng::default();
 
-        let words = std::fs::read_to_string("words/default.txt")?;
-        let dict = Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt")?;
+        let dict = Dictionary::from_string(&mut words);
         let mut gen = Generator::with_dict(&dict);
 
         for _ in 0..cycles {

@@ -8,14 +8,14 @@ use crate::rng::Rng;
 /// generated the plaintext ourself, we can simply compare our cracking results to verify.
 #[derive(Clone, Debug)]
 pub struct Generator<'d> {
-    dictionary: &'d Dictionary,
+    dictionary: &'d Dictionary<'d>,
     pub rng: Rng,
 }
 
 impl<'d> Generator<'d> {
     /// Instantiate a generator that generates messages using the given [`Dictionary`] as a
     /// wordbank.
-    pub fn with_dict(dictionary: &'d Dictionary) -> Self {
+    pub fn with_dict(dictionary: &'d Dictionary<'d>) -> Self {
         Self {
             rng: Rng::default(),
             dictionary,
@@ -30,10 +30,10 @@ impl<'d> Generator<'d> {
 
         for _ in 0..num_words {
             // choose a word at random
-            let word = self.rng.choose(&self.dictionary.words);
+            let word = *self.rng.choose(&self.dictionary.words);
 
             // push the &str (pointer to the String + length) into the vector
-            sentence.push(word.as_str());
+            sentence.push(word);
         }
 
         // join up all those &strs into a space separated String
@@ -47,8 +47,8 @@ mod tests {
     use super::*;
     #[test]
     fn generate_words() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         let mut g = Generator::with_dict(&d);
         assert_eq!("jkl", g.generate_words(1));
@@ -62,8 +62,8 @@ mod tests {
 
     #[test]
     fn generate_sentence() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         let mut g = Generator::with_dict(&d);
         assert_eq!("jkl ghi ghi abc abc abc def", g.generate_words(7));
@@ -71,8 +71,8 @@ mod tests {
 
     #[test]
     fn clone_debug() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         let gen = Generator::with_dict(&d);
         let new_gen = gen.clone();
