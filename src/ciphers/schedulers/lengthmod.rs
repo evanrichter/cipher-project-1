@@ -34,3 +34,4 @@ mod tests {
         let mut res = lengthmod.schedule(1, 50, 501);
         assert_eq!(res, 1);
     }
+}
