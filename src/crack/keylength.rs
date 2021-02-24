@@ -3,7 +3,7 @@
 /// based ciphers, but this implementation worked against the linked cryptopals challenge based on
 /// multi-byte xor.
 #[allow(dead_code)]
-pub fn keylength_guesses(ciphertext: &[u8]) -> Vec<usize> {
+pub fn guesses(ciphertext: &[u8]) -> Vec<usize> {
     const KEYSIZE_LO: usize = 4;
     const KEYSIZE_HI: usize = 64;
 
