@@ -53,9 +53,19 @@ impl Frequencies {
     }
 }
 
+/// Every cracking strategy produces some plaintext along with a confidence value. If we run two
+/// different strategies, both are successful (returning `Some(CrackResult)`), but the plaintexts
+/// don't match, we could try to guess the correct one based on the confidence value.
 pub struct CrackResult {
+    /// Guessed plaintext.
     pub plaintext: String,
-    pub score: f32,
+    /// Confidence value associated with the plaintext on a scale of 0-100. Lower values correspond
+    /// to **most confident** with 0.0 being the absolute most confident.
+    ///
+    /// An example way to calculate confidence would be to take the number of characters in words
+    /// that needed to be "spell corrected" to a valid word in the dictionary, divided by the
+    /// length of plaintext. This would
+    pub confidence: f64,
 }
 
 /// Crack the ciphertext based on the given keylength
@@ -65,6 +75,6 @@ pub fn crack(ciphertext: &[i8], keylength: usize) -> CrackResult {
 
     CrackResult {
         plaintext,
-        score: 2015.0,
+        confidence: 2015.0,
     }
 }
