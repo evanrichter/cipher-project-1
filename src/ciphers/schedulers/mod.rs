@@ -7,7 +7,7 @@ mod periodicrand;
 mod repeatingkey;
 
 pub use aab::Aab;
-pub use lengthmod::Lengthmod;
+pub use lengthmod::LengthMod;
 pub use offsetreverse::OffsetReverse;
 pub use periodicrand::PeriodicRand;
 pub use repeatingkey::RepeatingKey;
