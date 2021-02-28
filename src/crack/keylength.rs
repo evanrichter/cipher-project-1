@@ -16,8 +16,10 @@ pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
 
     // figure out y = mx + b
     let xy: Vec<_> = keysizes.iter().map(|(a, b)| (*a as f64, *b)).collect();
-    let xmean = xy.iter().map(|(a, _)| a).sum::<f64>() / xy.len() as f64;
-    let ymean = xy.iter().map(|(_, b)| b).sum::<f64>() / xy.len() as f64;
+    let (xtot, ytot) = xy
+        .iter()
+        .fold((0.0, 0.0), |(sa, sb), (a, b)| (sa + a, sb + b));
+    let (xmean, ymean) = (xtot / xy.len() as f64, ytot / xy.len() as f64);
     let (m, b) = linreg::lin_reg(xy.into_iter(), xmean, ymean).unwrap();
 
     // undo the y = mx + b and normalize to x again
@@ -25,7 +27,10 @@ pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
         *y = ((*y - b) + m * (*x as f64)) / *x as f64;
     }
 
+    // sort by best keysize, lowest first
     keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+
+    // return keysizes with their scores
     keysizes
 }
 
@@ -110,7 +115,7 @@ mod tests {
             // count how many are left
             .count();
 
-        assert!(integer_multiples > 0, "multiple of keylength not in top 5");
+        assert!(integer_multiples > 0, "keylength not in top 5");
     }
 
     #[test]
@@ -160,39 +165,12 @@ mod tests {
             overwrite: false,
         };
 
-        // since we are _inserting_ a random char into the key every 9 times, but the underlying
+        // since we are _inserting_ a random char into the key every 4 times, but the underlying
         // key still repeats every 7, I would expect the effective key (the pattern that actually
-        // repeats exactly) to be the Least Common Multiple of 7 and 9, or 63
-        let expected_keylen = lcm(keylen, period);
-        assert_eq!(expected_keylen, 28);
+        // repeats exactly) to be the Least Common Multiple of 7 and 4, or 28
+        let expected_keylen = 28;
 
         expected_keylen_rank(keylen, inserted_rand, expected_keylen);
-    }
-
-    /// least common multiple
-    fn lcm(a: usize, b: usize) -> usize {
-        (a * b) / gcd(a, b)
-    }
-
-    /// greatest common divisor
-    fn gcd(a: usize, b: usize) -> usize {
-        let mut max = a;
-        let mut min = b;
-        if min > max {
-            let val = max;
-            max = min;
-            min = val;
-        }
-
-        loop {
-            let res = max % min;
-            if res == 0 {
-                return min;
-            }
-
-            max = min;
-            min = res;
-        }
     }
 
     /// stress testing keylength guessing
@@ -206,7 +184,9 @@ mod tests {
         let dict = crate::Dictionary::from_string(&mut words);
         let mut gen = crate::Generator::with_dict(&dict);
 
-        // reusable Vec for key
+        // reusable Vecs for ciphertext, key, plaintext
+        let mut plaintext = String::new();
+        let mut ciphertext = String::new();
         let mut key = Vec::new();
 
         // total runs to do
@@ -225,7 +205,7 @@ mod tests {
             }
 
             // build the plaintext
-            let plaintext = gen.generate_words(120);
+            gen.generate_words_into(120, &mut plaintext);
 
             // create the encryptor
             // TODO: generate a random scheduler
@@ -233,11 +213,11 @@ mod tests {
             let encryptor = Encryptor::new(key.clone(), RepeatingKey, enc_rng);
 
             // encrypt to ciphertext
-            let ciphertext = encryptor.encrypt(&plaintext);
-            let ciphertext = crate::utils::str_to_bytes(&ciphertext);
+            encryptor.encrypt_into(&plaintext, &mut ciphertext);
+            let ct_bytes = crate::utils::str_to_bytes(&ciphertext);
 
             // get keylength guesses
-            let guesses = guesses(&ciphertext);
+            let guesses = guesses(&ct_bytes);
 
             // count how many integer multiples (including exact matches) of the expected keylength are
             // in the top results
@@ -253,7 +233,9 @@ mod tests {
                 failures += 1;
             }
 
-            // clear the key contents (but keeps allocation)
+            // clear the buffers but keep allocation around
+            ciphertext.clear();
+            plaintext.clear();
             key.clear();
         }
 
