@@ -3,9 +3,9 @@
 /// based ciphers, but this implementation worked against the linked cryptopals challenge based on
 /// multi-byte xor.
 #[allow(dead_code)]
-pub fn guesses(ciphertext: &[u8]) -> Vec<usize> {
-    const KEYSIZE_LO: usize = 4;
-    const KEYSIZE_HI: usize = 45;
+pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
+    const KEYSIZE_LO: usize = 3;
+    const KEYSIZE_HI: usize = 70;
 
     let mut keysizes: Vec<(usize, f64)> = Vec::with_capacity(KEYSIZE_HI);
 
@@ -14,17 +14,19 @@ pub fn guesses(ciphertext: &[u8]) -> Vec<usize> {
         keysizes.push((keysize, score));
     }
 
-    keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+    // figure out y = mx + b
+    let xy: Vec<_> = keysizes.iter().map(|(a, b)| (*a as f64, *b)).collect();
+    let xmean = xy.iter().map(|(a, _)| a).sum::<f64>() / xy.len() as f64;
+    let ymean = xy.iter().map(|(_, b)| b).sum::<f64>() / xy.len() as f64;
+    let (m, b) = linreg::lin_reg(xy.into_iter(), xmean, ymean).unwrap();
 
-    for k in keysizes.iter() {
-        println!("{}  {}", k.0, k.1);
+    // undo the y = mx + b and normalize to x again
+    for (x, y) in keysizes.iter_mut() {
+        *y = ((*y - b) + m * (*x as f64)) / *x as f64;
     }
 
+    keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
     keysizes
-        .into_iter()
-        .take(30)
-        .map(|(size, _score)| size)
-        .collect()
 }
 
 /// Take 4 chunks of size `chunksize` and calculate a normalized score of the Hamming distance
@@ -79,8 +81,8 @@ mod tests {
         }
 
         // generate plaintext
-        let words = std::fs::read_to_string("words/default.txt").unwrap();
-        let dict = crate::Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt").unwrap();
+        let dict = crate::Dictionary::from_string(&mut words);
         let mut gen = crate::Generator::with_dict(&dict);
         let plaintext = gen.generate_words(1000);
 
@@ -94,17 +96,17 @@ mod tests {
         let ciphertext = crate::utils::str_to_bytes(&ciphertext);
 
         // calculate guesses
-        dbg!(&expected_keylen);
-        let guesses = keylength_guesses(&ciphertext);
+        let guesses = guesses(&ciphertext);
 
         // count how many integer multiples (including exact matches) of the expected keylength are
         // in the top results
         let integer_multiples = guesses
             .iter()
+            .map(|(guess, _score)| guess)
             // only look at the top 5 guesses
             .take(5)
             // filter where the expected keylength is a factor of the guess
-            .filter(|&&guess| guess == lcm(guess, expected_keylen))
+            .filter(|&&guess| guess == expected_keylen)
             // count how many are left
             .count();
 
@@ -195,21 +197,27 @@ mod tests {
 
     /// stress testing keylength guessing
     #[test]
+    #[ignore]
     fn stresstest() {
         let mut rng = Rng::default();
 
         // plaintext generator
-        let words = std::fs::read_to_string("words/default.txt").unwrap();
-        let dict = crate::Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt").unwrap();
+        let dict = crate::Dictionary::from_string(&mut words);
         let mut gen = crate::Generator::with_dict(&dict);
 
         // reusable Vec for key
         let mut key = Vec::new();
 
-        for x in 0..5000 {
-            println!("succeeded: {}", x);
-            // choose a keylength between 8 and 40
-            let keylen = rng.next() % 32 + 8;
+        // total runs to do
+        const RUNS: usize = 1000;
+
+        // total number of "failures" where the correct keylength was not in the top 15 results
+        let mut failures = 0;
+
+        for _ in 0..RUNS {
+            // choose a keylength between 8 and 32
+            let keylen = rng.next() % 30 + 8;
 
             // build the key
             for _ in 0..keylen {
@@ -217,9 +225,7 @@ mod tests {
             }
 
             // build the plaintext
-            let num_words = rng.next() as usize % 256 + 100;
-            dbg!(num_words);
-            let plaintext = gen.generate_words(num_words);
+            let plaintext = gen.generate_words(120);
 
             // create the encryptor
             // TODO: generate a random scheduler
@@ -228,27 +234,34 @@ mod tests {
 
             // encrypt to ciphertext
             let ciphertext = encryptor.encrypt(&plaintext);
+            let ciphertext = crate::utils::str_to_bytes(&ciphertext);
 
             // get keylength guesses
-            let ciphertext = crate::utils::str_to_bytes(&ciphertext);
-            dbg!(keylen);
-            let guesses = keylength_guesses(&ciphertext);
+            let guesses = guesses(&ciphertext);
 
             // count how many integer multiples (including exact matches) of the expected keylength are
             // in the top results
-            let integer_multiples = guesses
+            let guessed = guesses
                 .iter()
-                // only look at the top 5 guesses
+                .map(|(guess, _score)| guess)
+                // only look at the top 15 guesses
                 .take(15)
                 // filter where the expected keylength is a factor of the guess
-                .filter(|&&guess| guess == lcm(guess, keylen as usize))
-                // count how many are left
-                .count();
+                .any(|&guess| guess == keylen as usize);
 
-            assert!(integer_multiples > 0, "multiple of keylength not in top 5");
+            if !guessed {
+                failures += 1;
+            }
 
             // clear the key contents (but keeps allocation)
             key.clear();
         }
+
+        println!("successes: {}", RUNS - failures);
+        println!("failures: {}", failures);
+        assert!(
+            (failures as f32 / RUNS as f32) < 0.05,
+            "too many failures when guessing keylength"
+        );
     }
 }

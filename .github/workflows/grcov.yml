@@ -17,7 +17,7 @@ jobs:
           components: llvm-tools-preview
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: test -- --include-ignored
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zinstrument-coverage'
