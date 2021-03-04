@@ -8,8 +8,13 @@
 //! We have access to the dictionary of plaintext words, so calculate character frequency using the
 //! dictionary.
 
+use core::f32;
+use std::{collections::HashMap, convert::TryInto};
+use std::collections::hash_map::Entry;
+
 use crate::dict::Dictionary;
 use crate::utils::{CharToNum, NumToChar, ShiftChar};
+
 
 /// Frequency distribution
 pub struct Frequencies {
@@ -24,11 +29,39 @@ pub struct Frequencies {
 impl Frequencies {
     ///  Generate the baseline character frequency from the given dictionary.
     pub fn from_dict(dict: &Dictionary) -> Self {
+        // open file and read contents to string
+        //let mut file = File::open("/path/to/file").expect("Unable to open the file");
+        let mut s = String::new();
+        //file.read_to_string(&mut s).expect("Unable to read the file");
+        
         let mut values = [0.0; 27];
+        let mut h: HashMap<char, f32> = HashMap::new();
 
+        // generate a hashmap to get the occurance of every character in the string
+        for c in s.chars() {
+            match h.entry(c) {
+                Entry::Occupied(mut x) => {*x.get_mut() += 1.0;}
+                Entry::Vacant(_) => {h.insert(c,1.0);}
+            }
+        }
+        let alphabet: String = String::from("abcdefghijklmnopqrstuvwxyz ");
         // add frequency for 'a'
-        let a = 12.3;
-        values[0] = a;
+        for i in 0..=26 {
+            match h.get(&alphabet.chars().nth(i).unwrap()) {
+                Some(h) => {values[i] = *h;}
+                None => {continue;}
+            }
+        }
+
+        //this is how i'd like to do this:
+        for i in 0..=26 {
+            //let mut num = i as i8;
+            match h.get(i.NumToChar()) {
+                Some(h) => {values[i] = *h;}
+                None => {continue;}
+            }
+        }
+        
 
         // return Frequencies
         Self { values }
@@ -38,6 +71,16 @@ impl Frequencies {
     ///  and 26 is ' '.
     pub fn from_bytes(bytes: &[i8]) -> Self {
         let mut values = [0.0; 27];
+        let mut h: HashMap<char, usize> = HashMap::new();
+        
+        // I *think* this will just be the same as above?
+        // generate a hashmap to get the occurance of every character in the string
+        for c in s.chars() {
+            match h.entry(c) {
+                Entry::Occupied(mut x) => {*x.get_mut() += 1;}
+                Entry::Vacant(_) => {h.insert(c,1);}
+            }
+        }
 
         // return Frequencies
         Self { values }
@@ -50,7 +93,13 @@ impl Frequencies {
             .zip(other.values.iter())
             .map(|(baseline, other)| (other - baseline).abs()) // TODO: this is not the way
             .sum()
-    }
+        
+        self.values
+            .iter()
+            .zip(other.values.iter())
+            
+    
+        }
 }
 
 /// Every cracking strategy produces some plaintext along with a confidence value. If we run two
@@ -71,7 +120,11 @@ pub struct CrackResult {
 /// Crack the ciphertext based on the given keylength
 pub fn crack(ciphertext: &[i8], keylength: usize) -> CrackResult {
     // rot 13
-    let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(13)).collect();
+    //let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(13)).collect();
+
+    let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(keylength.try_into().unwrap())).collect();
+
+
 
     CrackResult {
         plaintext,
