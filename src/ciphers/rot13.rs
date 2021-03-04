@@ -6,12 +6,12 @@ use crate::Cipher;
 pub struct Rot13;
 
 impl Cipher for Rot13 {
-    fn encrypt(&self, plaintext: &str) -> String {
-        plaintext.chars().map(|c| c.shift(13)).collect()
+    fn encrypt_into(&self, plaintext: &str, ciphertext: &mut String) {
+        ciphertext.extend(plaintext.chars().map(|c| c.shift(13)));
     }
 
-    fn decrypt(&self, ciphertext: &str) -> String {
-        ciphertext.chars().map(|c| c.shift(-13)).collect()
+    fn decrypt_into(&self, ciphertext: &str, plaintext: &mut String) {
+        plaintext.extend(ciphertext.chars().map(|c| c.shift(-13)));
     }
 }
 

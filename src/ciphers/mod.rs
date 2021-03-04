@@ -10,10 +10,25 @@ pub use schedulers::KeySchedule;
 
 /// The Cipher trait describes what every cipher needs to be able to do.
 pub trait Cipher {
-    /// Encrypt the given plaintext and return a String
-    fn encrypt(&self, plaintext: &str) -> String;
+    /// Encrypt into an already allocated String, appending ciphertext
+    fn encrypt_into(&self, plaintext: &str, ciphertext: &mut String);
+
     /// Decrypt the given ciphertext and return a String.
-    fn decrypt(&self, ciphertext: &str) -> String;
+    fn decrypt_into(&self, ciphertext: &str, plaintext: &mut String);
+
+    /// Decrypt the given ciphertext and return a String.
+    fn decrypt(&self, ciphertext: &str) -> String {
+        let mut plaintext = String::with_capacity(ciphertext.len());
+        self.decrypt_into(ciphertext, &mut plaintext);
+        plaintext
+    }
+
+    /// Encrypt the given plaintext and return a String
+    fn encrypt(&self, plaintext: &str) -> String {
+        let mut ciphertext = String::with_capacity(plaintext.len());
+        self.encrypt_into(plaintext, &mut ciphertext);
+        ciphertext
+    }
 }
 
 #[cfg(test)]
@@ -45,8 +60,8 @@ pub mod testing {
     }
 
     pub fn stresstest<T: Cipher + Debug>(cipher: T, cycles: usize) -> anyhow::Result<()> {
-        let words = std::fs::read_to_string("words/default.txt")?;
-        let dict = Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt")?;
+        let dict = Dictionary::from_string(&mut words);
         let mut gen = Generator::with_dict(&dict);
 
         for _ in 0..cycles {
@@ -59,8 +74,8 @@ pub mod testing {
     pub fn randomized_stresstest<T: Cipher + FromRng + Debug>(cycles: usize) -> anyhow::Result<()> {
         let mut rng = Rng::default();
 
-        let words = std::fs::read_to_string("words/default.txt")?;
-        let dict = Dictionary::from_string(words);
+        let mut words = std::fs::read_to_string("words/default.txt")?;
+        let dict = Dictionary::from_string(&mut words);
         let mut gen = Generator::with_dict(&dict);
 
         for _ in 0..cycles {

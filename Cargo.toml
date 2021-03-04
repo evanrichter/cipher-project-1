@@ -9,4 +9,5 @@ opt-level = 3
 
 [dependencies]
 anyhow = "1.0"
-strsim = "0.10.0"
+strsim = "0.10"
+linreg = "0.2"

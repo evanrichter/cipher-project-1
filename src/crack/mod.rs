@@ -3,9 +3,9 @@
 //! This module holds all code needed for cracking ciphertexts specifically encrypted using the
 //! project encryption model: [`Encryptor`][`crate::ciphers::Encryptor`]
 
-mod keylength_guessing;
+mod keylength;
 
-pub use keylength_guessing::keylength_guesses;
+pub use keylength::guesses;
 
 /// Every cracking strategy produces some plaintext along with a confidence value. If we run two
 /// different strategies, both are successful (returning `Some(CrackResult)`), but the plaintexts

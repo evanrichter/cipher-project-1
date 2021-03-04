@@ -3,11 +3,11 @@
 /// A dictionary will hold an alphabetized wordlist. Each word only consists of lowercase ASCII
 /// alphabetic characters.
 #[derive(Clone, Debug)]
-pub struct Dictionary {
-    pub words: Vec<String>,
+pub struct Dictionary<'a> {
+    pub words: Vec<&'a str>,
 }
 
-impl Dictionary {
+impl<'a> Dictionary<'a> {
     /// Create a dictionary from a single string that is whitespace  separated. This function will
     /// work for both:
     ///  * the project specified dictionary input (a file with space separated words)
@@ -15,8 +15,10 @@ impl Dictionary {
     ///
     ///  This function also rejects any word that contains non alphabetic ascii characters,
     ///  printing to stderr for each word it tosses out.
-    pub fn from_string(source: String) -> Self {
-        let mut words: Vec<String> = source
+    pub fn from_string(source: &'a mut String) -> Self {
+        // lowercase the whole source string
+        *source = source.to_ascii_lowercase();
+        let mut words: Vec<&str> = source
             // trim off starting and trailing whitespace
             .trim()
             // split by any type of ascii whitespace
@@ -29,8 +31,6 @@ impl Dictionary {
                 }
                 alphabetic
             })
-            // lowercase the word
-            .map(|word| word.to_ascii_lowercase())
             // call next on the iterator, building up a single Vec
             .collect();
 
@@ -55,9 +55,8 @@ impl Dictionary {
         // iterate over words in dictionary
         self.words
             .iter()
-            .map(|s| s.as_str())
             // create tuples of &str and the respective levenshtein distance
-            .map(|s| (s, strsim::levenshtein(word, s)))
+            .map(|&s| (s, strsim::levenshtein(word, s)))
             // return the best word-score tuple
             .min_by_key(|x| x.1)
             .expect("spell correct with an empty Dictionary")
@@ -70,8 +69,8 @@ mod tests {
     use super::*;
     #[test]
     fn create() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.len(), 4);
         assert_eq!(d.words[0], "abc");
@@ -82,8 +81,8 @@ mod tests {
 
     #[test]
     fn len() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.len(), 4);
         assert_eq!(d.words.len(), 4);
@@ -91,8 +90,8 @@ mod tests {
 
     #[test]
     fn reject_nonascii() {
-        let s = String::from("abc def g.hi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def g.hi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.len(), 3);
         assert_eq!(d.words[0], "abc");
@@ -102,8 +101,8 @@ mod tests {
 
     #[test]
     fn order() {
-        let s = String::from("def jkl abc ghi");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("def jkl abc ghi");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.len(), 4);
         assert_eq!(d.words[0], "abc");
@@ -114,8 +113,8 @@ mod tests {
 
     #[test]
     fn trim() {
-        let s = String::from("    abc \n  def \t ghi   jkl\n\n  ");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("    abc \n  def \t ghi   jkl\n\n  ");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.len(), 4);
         assert_eq!(d.words[0], "abc");
@@ -126,8 +125,8 @@ mod tests {
 
     #[test]
     fn levenshtein() {
-        let s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(s);
+        let mut s = String::from("abc def ghi jkl");
+        let d = Dictionary::from_string(&mut s);
 
         assert_eq!(d.best_levenshtein("acb"), ("abc", 2));
         assert_eq!(d.best_levenshtein("de"), ("def", 1));
