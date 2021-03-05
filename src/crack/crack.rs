@@ -8,12 +8,10 @@
 //! We have access to the dictionary of plaintext words, so calculate character frequency using the
 //! dictionary.
 
-use core::f32;
-use std::{collections::HashMap, convert::TryInto};
-use std::collections::hash_map::Entry;
+use std::convert::TryInto;
 
 use crate::dict::Dictionary;
-use crate::utils::{CharToNum, NumToChar, ShiftChar};
+use crate::utils::{NumToChar, ShiftChar};
 
 
 /// Frequency distribution
@@ -29,39 +27,25 @@ pub struct Frequencies {
 impl Frequencies {
     ///  Generate the baseline character frequency from the given dictionary.
     pub fn from_dict(dict: &Dictionary) -> Self {
-        // open file and read contents to string
-        //let mut file = File::open("/path/to/file").expect("Unable to open the file");
-        let mut s = String::new();
-        //file.read_to_string(&mut s).expect("Unable to read the file");
-        
         let mut values = [0.0; 27];
-        let mut h: HashMap<char, f32> = HashMap::new();
 
-        // generate a hashmap to get the occurance of every character in the string
-        for c in s.chars() {
-            match h.entry(c) {
-                Entry::Occupied(mut x) => {*x.get_mut() += 1.0;}
-                Entry::Vacant(_) => {h.insert(c,1.0);}
+        // count occurrences of all letters except space
+        for (index, letter) in crate::utils::ALPHABET.chars().enumerate().take(26) {
+            let mut count = 0;
+            for word in &dict.words {
+                count += word.chars().filter(|c| c == &letter).count();
             }
-        }
-        let alphabet: String = String::from("abcdefghijklmnopqrstuvwxyz ");
-        // add frequency for 'a'
-        for i in 0..=26 {
-            match h.get(&alphabet.chars().nth(i).unwrap()) {
-                Some(h) => {values[i] = *h;}
-                None => {continue;}
-            }
+            values[index] = count as f32;
         }
 
-        //this is how i'd like to do this:
-        for i in 0..=26 {
-            //let mut num = i as i8;
-            match h.get(i.NumToChar()) {
-                Some(h) => {values[i] = *h;}
-                None => {continue;}
-            }
+        // for space, every word is followed by a space, so we can just count words
+        values[26] = dict.words.len() as f32;
+
+        // divide each letter count by the total to get a fraction
+        let total: f32 = values.iter().sum();
+        for v in values.iter_mut() {
+            *v = *v / total;
         }
-        
 
         // return Frequencies
         Self { values }
@@ -71,15 +55,19 @@ impl Frequencies {
     ///  and 26 is ' '.
     pub fn from_bytes(bytes: &[i8]) -> Self {
         let mut values = [0.0; 27];
-        let mut h: HashMap<char, usize> = HashMap::new();
-        
-        // I *think* this will just be the same as above?
-        // generate a hashmap to get the occurance of every character in the string
-        for c in s.chars() {
-            match h.entry(c) {
-                Entry::Occupied(mut x) => {*x.get_mut() += 1;}
-                Entry::Vacant(_) => {h.insert(c,1);}
-            }
+       
+        // the byte values are assumed to already be "nice" and in the range 0-26. Rust will crash
+        // safely if this is not the case.
+        //
+        // the utils::str_to_bytes function should be used early on when using bytes instead of
+        // chars so this is ok.
+        for b in bytes {
+            values[*b as usize] += 1.0;
+        }
+
+        // divide by total number of bytes
+        for v in values.iter_mut() {
+            *v = *v / (bytes.len() as f32);
         }
 
         // return Frequencies
@@ -88,18 +76,22 @@ impl Frequencies {
 
     /// Compare two frequency vectors. Lower score means closer.
     pub fn compare(&self, other: &Self) -> f32 {
-        self.values
+        let sum_of_differences = self.values
             .iter()
             .zip(other.values.iter())
             .map(|(baseline, other)| (other - baseline).abs()) // TODO: this is not the way
-            .sum()
-        
+            .sum();
+       
+        /*
         self.values
             .iter()
             .zip(other.values.iter())
             
     
         }
+        */
+        return sum_of_differences;
+}
 }
 
 /// Every cracking strategy produces some plaintext along with a confidence value. If we run two
