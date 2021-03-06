@@ -8,7 +8,7 @@
 //! We have access to the dictionary of plaintext words, so calculate character frequency using the
 //! dictionary.
 
-use std::convert::TryInto;
+use std::{convert::TryInto, string};
 
 use crate::dict::Dictionary;
 use crate::utils::{NumToChar, ShiftChar};
@@ -82,14 +82,6 @@ impl Frequencies {
             .map(|(baseline, other)| (other - baseline).abs()) // TODO: this is not the way
             .sum();
        
-        /*
-        self.values
-            .iter()
-            .zip(other.values.iter())
-            
-    
-        }
-        */
         return sum_of_differences;
 }
 }
@@ -108,13 +100,67 @@ pub struct CrackResult {
     /// length of plaintext. This would
     pub confidence: f64,
 }
+/// Slice ciphertext into chunks of every (keylength) character
+pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec {
+    let ct_blocks = vec![];
+    for i in 0..keylength{
+        let mut block: Vec<char> = vec![];
+        for c in ciphertext.chars() {
+            
+            if i % keylength == i {
+                block.append(c)
+            }
+        }
+        ct_blocks.append(block.iter().collect())
+    }
+    ct_blocks
+}
+pub fn unslice(sliced_pt: String, keylength: usize) {
+    let mut pt_blocks:Vec<char> = vec![];
+    for i in 0..keylength {
+        let mut block = vec![];
+        for c in sliced_pt.chars() {
+            if i % keylength == i {
+                block.append(c)
+            }
+        }
+        pt_blocks.append(block.iter().collect())
+    }
+    let plaintext = pt_blocks.iter().collect();
+    plaintext
+}
 
 /// Crack the ciphertext based on the given keylength
-pub fn crack(ciphertext: &[i8], keylength: usize) -> CrackResult {
+pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> CrackResult {
     // rot 13
     //let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(13)).collect();
 
-    let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(keylength.try_into().unwrap())).collect();
+    //let pt_blocks = ciphertext.iter().map(|&n| n.to_char().shift(keylength.try_into().unwrap())).collect();
+    let mut confidence = 0.0;
+    let pt_slices = vec![];
+    let ct_blocks = slice(ciphertext, keylength);
+    let best_pt_vec = [];
+    for block in ct_blocks {
+        for shift in 0..26 {
+            let conf_vec = vec![];
+            let pt_block = block.iter().map(|&n| n.to_char().shift(shift)).collect();
+            let conf = Frequencies.compare(baseline, Frequencies.from_bytes(pt_block));
+            conf_vec.append(conf);
+        }
+        let best = conf_vec.iter().min();
+        let best_tuple = (pt_block, best);
+        best_pt_vec.append(best_tuple);
+    }
+
+    for best_conf in best_pt_vec.iter() {
+        confidence += best_conf.1;
+        pt_slices.append(best_conf.0);
+    }
+    let sliced_pt: String = pt_slices.iter().collect();
+    let plaintext: String = unslice(sliced_pt);
+
+    
+    
 
 
 
