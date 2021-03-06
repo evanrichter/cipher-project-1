@@ -100,20 +100,37 @@ pub struct CrackResult {
     /// length of plaintext. This would
     pub confidence: f64,
 }
+
 /// Slice ciphertext into chunks of every (keylength) character
-pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<i8> {
+pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
     let ct_blocks = vec![];
-    for i in 0..keylength{
-        let mut block: Vec<&i8> = vec![];
-        for b in ciphertext.into_iter() {
-            if i % keylength == i {
-                block.push(b);
-            }
-        }
-        ct_blocks.push(block.iter().collect());
+    for i in 0..keylength {
+        let block: Vec<_> = ciphertext
+            .iter()
+            .skip(i) // first skip past the first i items
+            .step_by(keylength) // now skip by a keylength every time
+            .copied() // copies the &i8 item type to i8 (owned)
+            .collect();
+        ct_blocks.push(block);
     }
+
+    // should have exactly keylength number of blocks
+    debug_assert_eq!(
+        keylength,
+        ct_blocks.len(),
+        "need same number chunks as indices in keylength!"
+    );
+
+    // make sure we didn't lose any ciphertext chars
+    debug_assert_eq!(
+        ciphertext.len(),
+        ct_blocks.iter().map(|block| block.len()).sum(),
+        "total chars same as original ciphertext length!"
+    );
+
     ct_blocks
 }
+
 /// Unslice the highest confidence plaintext into a normal string
 pub fn unslice(sliced_pt: String, keylength: usize)  -> String{
     let mut pt_blocks:Vec<char> = vec![];
