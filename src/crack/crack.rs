@@ -101,21 +101,21 @@ pub struct CrackResult {
     pub confidence: f64,
 }
 /// Slice ciphertext into chunks of every (keylength) character
-pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec {
+pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<i8> {
     let ct_blocks = vec![];
     for i in 0..keylength{
         let mut block: Vec<char> = vec![];
-        for c in ciphertext.chars() {
-            
+        for c in ciphertext.iter() {
             if i % keylength == i {
-                block.append(c)
+                block.push(c)
             }
         }
         ct_blocks.append(block.iter().collect())
     }
     ct_blocks
 }
-pub fn unslice(sliced_pt: String, keylength: usize) {
+/// Unslice the highest confidence plaintext into a normal string
+pub fn unslice(sliced_pt: String, keylength: usize)  -> String{
     let mut pt_blocks:Vec<char> = vec![];
     for i in 0..keylength {
         let mut block = vec![];
@@ -124,7 +124,7 @@ pub fn unslice(sliced_pt: String, keylength: usize) {
                 block.append(c)
             }
         }
-        pt_blocks.append(block.iter().collect())
+        pt_blocks.push(block.iter().collect())
     }
     let plaintext = pt_blocks.iter().collect();
     plaintext
@@ -141,9 +141,10 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
     let ct_blocks = slice(ciphertext, keylength);
     let best_pt_vec = [];
     for block in ct_blocks {
+        let mut conf_vec = vec![];
+        let mut pt_block = "";
         for shift in 0..26 {
-            let conf_vec = vec![];
-            let pt_block = block.iter().map(|&n| n.to_char().shift(shift)).collect();
+            pt_block = block.iter().map(|&n| n.to_char().shift(shift)).collect();
             let conf = Frequencies.compare(baseline, Frequencies.from_bytes(pt_block));
             conf_vec.append(conf);
         }
@@ -166,6 +167,6 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
 
     CrackResult {
         plaintext,
-        confidence: 2015.0,
+        confidence,
     }
 }
