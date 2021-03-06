@@ -104,13 +104,13 @@ pub struct CrackResult {
 pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<i8> {
     let ct_blocks = vec![];
     for i in 0..keylength{
-        let mut block: Vec<char> = vec![];
-        for c in ciphertext.iter() {
+        let mut block: Vec<&i8> = vec![];
+        for b in ciphertext.into_iter() {
             if i % keylength == i {
-                block.push(c)
+                block.push(b);
             }
         }
-        ct_blocks.append(block.iter().collect())
+        ct_blocks.push(block.iter().collect());
     }
     ct_blocks
 }
@@ -121,10 +121,10 @@ pub fn unslice(sliced_pt: String, keylength: usize)  -> String{
         let mut block = vec![];
         for c in sliced_pt.chars() {
             if i % keylength == i {
-                block.append(c)
+                block.push(c);
             }
         }
-        pt_blocks.push(block.iter().collect())
+        pt_blocks.append(&mut block);
     }
     let plaintext = pt_blocks.iter().collect();
     plaintext
@@ -136,29 +136,25 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
     //let plaintext = ciphertext.iter().map(|&n| n.to_char().shift(13)).collect();
 
     //let pt_blocks = ciphertext.iter().map(|&n| n.to_char().shift(keylength.try_into().unwrap())).collect();
-    let mut confidence = 0.0;
     let pt_slices = vec![];
     let ct_blocks = slice(ciphertext, keylength);
-    let best_pt_vec = [];
+    let mut total_conf: Vec<f32> = vec![];
     for block in ct_blocks {
-        let mut conf_vec = vec![];
+        let mut conf_vec: Vec<f32> = vec![];
         let mut pt_block = "";
         for shift in 0..26 {
             pt_block = block.iter().map(|&n| n.to_char().shift(shift)).collect();
             let conf = Frequencies.compare(baseline, Frequencies.from_bytes(pt_block));
             conf_vec.append(conf);
         }
-        let best = conf_vec.iter().min();
-        let best_tuple = (pt_block, best);
-        best_pt_vec.append(best_tuple);
+        let best: f32 = conf_vec.iter().min();
+        total_conf.push(best);
+        pt_slices.push(pt_block);
     }
 
-    for best_conf in best_pt_vec.iter() {
-        confidence += best_conf.1;
-        pt_slices.append(best_conf.0);
-    }
+    let confidence = &total_conf.iter().sum();
     let sliced_pt: String = pt_slices.iter().collect();
-    let plaintext: String = unslice(sliced_pt);
+    let plaintext: String = unslice(sliced_pt, keylength);
 
     
     
