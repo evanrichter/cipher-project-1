@@ -119,7 +119,7 @@ pub fn best_crack(crackresults: &[CrackResult]) -> CrackResult {
 
 /// Slice ciphertext into chunks of every (keylength) character
 pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
-    let ct_blocks = vec![];
+    let mut ct_blocks = vec![];
     for i in 0..keylength {
         let block: Vec<_> = ciphertext
             .iter()
@@ -148,19 +148,27 @@ pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
 }
 
 /// Unslice the highest confidence plaintext into a normal string
-pub fn unslice(sliced_pt: String, keylength: usize) -> String {
-    let mut pt_blocks: Vec<char> = vec![];
-    for i in 0..keylength {
-        let mut block = vec![];
-        for c in sliced_pt.chars() {
-            if i % keylength == i {
-                block.push(c);
+/// TODO: change this and other intermediate cracking steps where we handle Strings like this to
+/// Vec<i8> and &[i8]
+pub fn unslice(pt_blocks: Vec<String>, keylength: usize) -> String {
+    // get a single string ready
+    let mut unsliced = String::with_capacity(pt_blocks[0].len() * keylength);
+
+    // the first block will be the longest, so we iterate over indexes of that
+    for i in 0..pt_blocks[0].chars().count() {
+        // for every index, go through each block and pull out the character there.
+        // if there is no character there, just continue
+        for block in pt_blocks.iter() {
+            // this here is awkward because we can't simply do block.get(i) on a str (because of
+            // unicode) this will be better after changing to only handling i8 instead of char and
+            // str when cracking
+            if let Some(c) = block.chars().nth(i) {
+                unsliced.push(c);
             }
         }
-        pt_blocks.append(&mut block);
     }
-    let plaintext = pt_blocks.iter().collect();
-    plaintext
+
+    unsliced
 }
 
 /// Crack a single block of ciphertext as if it were shifted with a key of length 1
@@ -203,8 +211,11 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
     }
 
     // de-interleave the plaintext chunks back into one contiguous plaintext
-    let sliced_pt: String = pt_slices.iter().collect();
-    let plaintext: String = unslice(sliced_pt, keylength);
+    let pt_chunks: Vec<String> = crack_results
+        .iter()
+        .map(|cr| cr.plaintext.clone())
+        .collect();
+    let plaintext: String = unslice(pt_chunks, keylength);
 
     // confidence overall is sum of each individual confidence
     let total_confidence = crack_results.iter().map(|cr| cr.confidence).sum();
