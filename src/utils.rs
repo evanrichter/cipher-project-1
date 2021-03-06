@@ -101,8 +101,8 @@ pub fn reduce_key(key: &mut Key) {
 
 /// Translate an entire &str to a Vec of bytes to more easily perform math.
 #[allow(dead_code)]
-pub fn str_to_bytes(s: &str) -> Vec<u8> {
-    s.chars().map(|c| c.to_num() as u8).collect()
+pub fn str_to_bytes(s: &str) -> Vec<i8> {
+    s.chars().map(|c| c.to_num() as i8).collect()
 }
 
 /// Translate a slice of bytes back to a &str for presentation. For example, printing the recovered
