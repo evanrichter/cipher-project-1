@@ -144,7 +144,7 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
         let mut pt_block = "";
         for shift in 0..26 {
             pt_block = block.iter().map(|&n| n.to_char().shift(shift)).collect();
-            let conf = Frequencies.compare(baseline, Frequencies.from_bytes(pt_block));
+            let conf = Frequencies::compare(baseline,&Frequencies::from_bytes(pt_block));
             conf_vec.append(conf);
         }
         let best: f32 = conf_vec.iter().min();
@@ -163,6 +163,6 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
 
     CrackResult {
         plaintext,
-        confidence,
+        confidence: *confidence,
     }
 }
