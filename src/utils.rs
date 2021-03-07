@@ -64,6 +64,23 @@ impl ShiftChar for char {
     }
 }
 
+/// An extension trait to shift `char` by some amount, using modulo to wrap around if needed.
+pub trait ShiftNum {
+    fn shift(self, amount: i8) -> Self;
+}
+
+impl ShiftNum for i8 {
+    fn shift(self, amount: i8) -> Self {
+        const ALPHALEN: i8 = ALPHABET.len() as i8;
+
+        // wrap the shift amount to within one alphabet length
+        let amount = amount.rem_euclid(ALPHALEN);
+
+        // add the shift amount
+        (self + amount).rem_euclid(ALPHALEN)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,8 +118,8 @@ pub fn reduce_key(key: &mut Key) {
 
 /// Translate an entire &str to a Vec of bytes to more easily perform math.
 #[allow(dead_code)]
-pub fn str_to_bytes(s: &str) -> Vec<u8> {
-    s.chars().map(|c| c.to_num() as u8).collect()
+pub fn str_to_bytes(s: &str) -> Vec<i8> {
+    s.chars().map(|c| c.to_num() as i8).collect()
 }
 
 /// Translate a slice of bytes back to a &str for presentation. For example, printing the recovered
