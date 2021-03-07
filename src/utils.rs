@@ -44,12 +44,12 @@ impl NumToChar for i8 {
     }
 }
 
-/// An extension trait to shift `char` by some amount, using modulo to wrap around if needed.
-pub trait ShiftChar {
+/// An extension trait to shift by some amount, using modulo to wrap around if needed.
+pub trait Shift {
     fn shift(self, amount: i8) -> Self;
 }
 
-impl ShiftChar for char {
+impl Shift for char {
     fn shift(self, amount: i8) -> Self {
         const ALPHALEN: i8 = ALPHABET.len() as i8;
 
@@ -61,6 +61,18 @@ impl ShiftChar for char {
 
         // add the shift amount, and return as char
         (num + amount).to_char()
+    }
+}
+
+impl Shift for i8 {
+    fn shift(self, amount: i8) -> Self {
+        const ALPHALEN: i8 = ALPHABET.len() as i8;
+
+        // wrap the shift amount to within one alphabet length
+        let amount = amount.rem_euclid(ALPHALEN);
+
+        // add the shift amount, and mod if needed
+        (self + amount).rem_euclid(ALPHALEN)
     }
 }
 
