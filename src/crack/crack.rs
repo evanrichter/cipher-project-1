@@ -119,30 +119,16 @@ pub fn best_crack(crackresults: &[CrackResult]) -> CrackResult {
 
 /// Slice ciphertext into chunks of every (keylength) character
 pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
-    let mut ct_blocks = vec![];
-    for i in 0..keylength {
-        let block: Vec<_> = ciphertext
-            .iter()
-            .skip(i) // first skip past the first i items
-            .step_by(keylength) // now skip by a keylength every time
-            .copied() // copies the &i8 item type to i8 (owned)
-            .collect();
-        ct_blocks.push(block);
+    let mut ct_blocks = vec![Vec::new(); keylength];
+
+    // pass over ciphertext, dumping the char into the right bucket as we go
+    for (ct_index, ct_char) in ciphertext.iter().enumerate() {
+        // find which bucket to use
+        let bucket = ct_index % keylength;
+
+        // push the char into that bucket
+        ct_blocks[bucket].push(*ct_char);
     }
-
-    // should have exactly keylength number of blocks
-    debug_assert_eq!(
-        keylength,
-        ct_blocks.len(),
-        "need same number chunks as indices in keylength!"
-    );
-
-    // make sure we didn't lose any ciphertext chars
-    debug_assert_eq!(
-        ciphertext.len(),
-        ct_blocks.iter().map(|block| block.len()).sum(),
-        "total chars same as original ciphertext length!"
-    );
 
     ct_blocks
 }
