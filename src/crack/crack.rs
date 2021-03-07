@@ -8,7 +8,7 @@
 //! We have access to the dictionary of plaintext words, so calculate character frequency using the
 //! dictionary.
 
-use crate::utils::{NumToChar, ShiftChar};
+use crate::utils::ShiftNum;
 use crate::{
     dict::Dictionary,
     utils::{str_to_bytes, ALPHABET},
@@ -97,7 +97,7 @@ impl Frequencies {
 #[derive(Clone)]
 pub struct CrackResult {
     /// Guessed plaintext.
-    pub plaintext: String,
+    pub plaintext: Vec<i8>,
     /// Confidence value associated with the plaintext on a scale of 0-100. Lower values correspond
     /// to **most confident** with 0.0 being the absolute most confident.
     ///
@@ -134,22 +134,20 @@ pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
 }
 
 /// Unslice the highest confidence plaintext into a normal string
-/// TODO: change this and other intermediate cracking steps where we handle Strings like this to
-/// Vec<i8> and &[i8]
-pub fn unslice(pt_blocks: Vec<String>, keylength: usize) -> String {
+pub fn unslice(pt_blocks: Vec<Vec<i8>>, keylength: usize) -> Vec<i8> {
     // get a single string ready
-    let mut unsliced = String::with_capacity(pt_blocks[0].len() * keylength);
+    let mut unsliced = Vec::with_capacity(pt_blocks[0].len() * keylength);
 
     // the first block will be the longest, so we iterate over indexes of that
-    for i in 0..pt_blocks[0].chars().count() {
+    for i in 0..pt_blocks[0].iter().count() {
         // for every index, go through each block and pull out the character there.
         // if there is no character there, just continue
         for block in pt_blocks.iter() {
             // this here is awkward because we can't simply do block.get(i) on a str (because of
             // unicode) this will be better after changing to only handling i8 instead of char and
             // str when cracking
-            if let Some(c) = block.chars().nth(i) {
-                unsliced.push(c);
+            if let Some(c) = block.iter().nth(i) {
+                unsliced.push(*c);
             }
         }
     }
@@ -165,12 +163,12 @@ fn crack_block(cipherblock: &[i8], baseline: &Frequencies) -> CrackResult {
     // try each shift in the alphabet (0 shift == 27 shift)
     for shift in 0..ALPHABET.len() as i8 {
         // make the plaintext
-        let plaintext: String = cipherblock
-            .iter()
-            .map(|&n| n.to_char().shift(shift))
-            .collect();
+        let plaintext: Vec<i8> = cipherblock.iter().map(|&n| n.shift(shift)).collect();
+
         // calculate the confidence to baseline
-        let confidence = Frequencies::compare(baseline, &Frequencies::from_str(&plaintext)) as f64;
+        let confidence =
+            Frequencies::compare(baseline, &Frequencies::from_bytes(&plaintext)) as f64;
+
         // push the result
         crack_results.push(CrackResult {
             plaintext,
@@ -197,11 +195,11 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
     }
 
     // de-interleave the plaintext chunks back into one contiguous plaintext
-    let pt_chunks: Vec<String> = crack_results
+    let pt_chunks: Vec<Vec<i8>> = crack_results
         .iter()
         .map(|cr| cr.plaintext.clone())
         .collect();
-    let plaintext: String = unslice(pt_chunks, keylength);
+    let plaintext: Vec<i8> = unslice(pt_chunks, keylength);
 
     // confidence overall is sum of each individual confidence
     let total_confidence = crack_results.iter().map(|cr| cr.confidence).sum();
