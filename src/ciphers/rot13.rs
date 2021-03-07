@@ -1,4 +1,4 @@
-use crate::utils::ShiftChar;
+use crate::utils::Shift;
 use crate::Cipher;
 
 /// A simple ROT13 cipher.
