@@ -13,7 +13,7 @@ pub use keylength::guesses;
 #[allow(dead_code)]
 pub struct CrackResult {
     /// Guessed plaintext.
-    pub plaintext: Vec<i8>,
+    pub plaintext: Vec<u8>,
     /// Confidence value associated with the plaintext on a scale of 0-100. Lower values correspond
     /// to **most confident** with 0.0 being the absolute most confident.
     ///
