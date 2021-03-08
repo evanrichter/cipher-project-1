@@ -16,7 +16,7 @@ pub use spellcheck::spellcheck;
 /// ( This is the output from guessing plaintext given a keylength )
 pub struct CrackResult {
     /// Guessed plaintext.
-    pub plaintext: String,
+    pub plaintext: Vec<i8>,
     /// Confidence value associated with the plaintext on a scale of 0-100. Lower values correspond
     /// to **most confident** with 0.0 being the absolute most confident.
     ///
