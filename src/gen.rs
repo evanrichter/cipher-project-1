@@ -25,19 +25,34 @@ impl<'d> Generator<'d> {
     /// Pick `num_words` number of words from the wordbank, join them together with a single space,
     /// then return as a String.
     pub fn generate_words(&mut self, num_words: usize) -> String {
-        // create a vector with a big enough allocation to hold `num_words` amount of &str
-        let mut sentence = Vec::with_capacity(num_words);
+        let mut sentence = String::new();
+        self.generate_words_into(num_words, &mut sentence);
+        sentence
+    }
+
+    /// Same as [`generate_words`] but appends to a String rather than returning a String. This may
+    /// be a good option for optimizations to reduce allocation.
+    pub fn generate_words_into(&mut self, num_words: usize, dest: &mut String) {
+        // prepend a space if we are appending to an already existing sentence
+        if dest.len() > 0 && !dest.ends_with(" ") {
+            dest.push(' ');
+        }
 
         for _ in 0..num_words {
             // choose a word at random
             let word = *self.rng.choose(&self.dictionary.words);
 
-            // push the &str (pointer to the String + length) into the vector
-            sentence.push(word);
+            // append the &str's characters to the String
+            dest.extend(word.chars());
+
+            // append a space
+            dest.push(' ');
         }
 
-        // join up all those &strs into a space separated String
-        sentence.join(" ")
+        // pop off the last trailing space if we added words
+        if num_words > 0 {
+            dest.pop();
+        }
     }
 }
 
