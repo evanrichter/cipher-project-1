@@ -14,7 +14,7 @@ pub use spellcheck::spellcheck;
 /// don't match, we could try to guess the correct one based on the confidence value.
 ///
 /// ( This is the output from guessing plaintext given a keylength )
- #[derive(Clone)]
+#[derive(Clone)]
 pub struct CrackResult {
     /// Guessed plaintext.
     pub plaintext: Vec<u8>,
