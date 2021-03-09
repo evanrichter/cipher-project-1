@@ -8,7 +8,8 @@
 //! We have access to the dictionary of plaintext words, so calculate character frequency using the
 //! dictionary.
 
-use crate::utils::ShiftNum;
+use super::CrackResult;
+use crate::utils::Shift;
 use crate::{
     dict::Dictionary,
     utils::{str_to_bytes, ALPHABET},
@@ -51,9 +52,9 @@ impl Frequencies {
         Self { values }
     }
 
-    ///  Calculate character frequency from a slice of bytes, &[i8], where 0 is 'a', 1 is 'b', etc.
+    ///  Calculate character frequency from a slice of bytes, &[u8], where 0 is 'a', 1 is 'b', etc.
     ///  and 26 is ' '.
-    pub fn from_bytes(bytes: &[i8]) -> Self {
+    pub fn from_bytes(bytes: &[u8]) -> Self {
         let mut values = [0.0; 27];
 
         // the byte values are assumed to already be "nice" and in the range 0-26. Rust will crash
@@ -91,22 +92,6 @@ impl Frequencies {
     }
 }
 
-/// Every cracking strategy produces some plaintext along with a confidence value. If we run two
-/// different strategies, both are successful (returning `Some(CrackResult)`), but the plaintexts
-/// don't match, we could try to guess the correct one based on the confidence value.
-#[derive(Clone)]
-pub struct CrackResult {
-    /// Guessed plaintext.
-    pub plaintext: Vec<i8>,
-    /// Confidence value associated with the plaintext on a scale of 0-100. Lower values correspond
-    /// to **most confident** with 0.0 being the absolute most confident.
-    ///
-    /// An example way to calculate confidence would be to take the number of characters in words
-    /// that needed to be "spell corrected" to a valid word in the dictionary, divided by the
-    /// length of plaintext. This would
-    pub confidence: f64,
-}
-
 /// Return the best (smallest confidence value) CrackResult from a list of many
 pub fn best_crack(crackresults: &[CrackResult]) -> CrackResult {
     assert!(crackresults.len() > 0);
@@ -118,7 +103,7 @@ pub fn best_crack(crackresults: &[CrackResult]) -> CrackResult {
 }
 
 /// Slice ciphertext into chunks of every (keylength) character
-pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
+pub fn slice(ciphertext: &[u8], keylength: usize) -> Vec<Vec<u8>> {
     let mut ct_blocks = vec![Vec::new(); keylength];
 
     // pass over ciphertext, dumping the char into the right bucket as we go
@@ -134,7 +119,7 @@ pub fn slice(ciphertext: &[i8], keylength: usize) -> Vec<Vec<i8>> {
 }
 
 /// Unslice the highest confidence plaintext into a normal string
-pub fn unslice(pt_blocks: Vec<Vec<i8>>, keylength: usize) -> Vec<i8> {
+pub fn unslice(pt_blocks: Vec<Vec<u8>>, keylength: usize) -> Vec<u8> {
     // get a single string ready
     let mut unsliced = Vec::with_capacity(pt_blocks[0].len() * keylength);
 
@@ -144,7 +129,7 @@ pub fn unslice(pt_blocks: Vec<Vec<i8>>, keylength: usize) -> Vec<i8> {
         // if there is no character there, just continue
         for block in pt_blocks.iter() {
             // this here is awkward because we can't simply do block.get(i) on a str (because of
-            // unicode) this will be better after changing to only handling i8 instead of char and
+            // unicode) this will be better after changing to only handling u8 instead of char and
             // str when cracking
             if let Some(c) = block.iter().nth(i) {
                 unsliced.push(*c);
@@ -156,14 +141,14 @@ pub fn unslice(pt_blocks: Vec<Vec<i8>>, keylength: usize) -> Vec<i8> {
 }
 
 /// Crack a single block of ciphertext as if it were shifted with a key of length 1
-fn crack_block(cipherblock: &[i8], baseline: &Frequencies) -> CrackResult {
+fn crack_block(cipherblock: &[u8], baseline: &Frequencies) -> CrackResult {
     // vector to hold each individual shift attempt
     let mut crack_results: Vec<CrackResult> = Vec::with_capacity(27);
 
     // try each shift in the alphabet (0 shift == 27 shift)
     for shift in 0..ALPHABET.len() as i8 {
         // make the plaintext
-        let plaintext: Vec<i8> = cipherblock.iter().map(|&n| n.shift(shift)).collect();
+        let plaintext: Vec<u8> = cipherblock.iter().map(|&n| n.shift(shift)).collect();
 
         // calculate the confidence to baseline
         let confidence =
@@ -181,7 +166,7 @@ fn crack_block(cipherblock: &[i8], baseline: &Frequencies) -> CrackResult {
 }
 
 /// Crack the ciphertext based on the given keylength
-pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> CrackResult {
+pub fn crack(ciphertext: &[u8], keylength: usize, baseline: &Frequencies) -> CrackResult {
     // slice up the ciphertext based on keylength
     let ct_blocks = slice(ciphertext, keylength);
 
@@ -195,11 +180,11 @@ pub fn crack(ciphertext: &[i8], keylength: usize, baseline: &Frequencies) -> Cra
     }
 
     // de-interleave the plaintext chunks back into one contiguous plaintext
-    let pt_chunks: Vec<Vec<i8>> = crack_results
+    let pt_chunks: Vec<Vec<u8>> = crack_results
         .iter()
         .map(|cr| cr.plaintext.clone())
         .collect();
-    let plaintext: Vec<i8> = unslice(pt_chunks, keylength);
+    let plaintext: Vec<u8> = unslice(pt_chunks, keylength);
 
     // confidence overall is sum of each individual confidence
     let total_confidence = crack_results.iter().map(|cr| cr.confidence).sum();
