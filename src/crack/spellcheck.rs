@@ -7,7 +7,7 @@ use strsim::levenshtein;
 
 
 use super::CrackResult;
-use crate::Dictionary;
+use crate::{Dictionary, utils::str_to_bytes, utils::bytes_to_str};
 
 /// This function exploits the fact that we know the source dictionary (or can guess between a
 /// small number of dictionaries), and uses spell checking strategies to fix up any incorrectly
@@ -19,43 +19,40 @@ use crate::Dictionary;
 pub fn spellcheck(cracked: &CrackResult, dict: &Dictionary) -> CrackResult {
 
     // do stuff here to create a real spell checked result
+    let mut correcttext: String; 
+    let iteratortext: String;
+  
 
 
+    iteratortext = bytes_to_str(&cracked.plaintext);
+
+    correcttext = bytes_to_str(&cracked.plaintext).to_string();
     
-    let mut correcttext = cracked.plaintext.clone();
-    let iteratortext = cracked.plaintext.clone();
-    
 
-    let mut newconfidence: f64 = 0.0;
-
-
-   for word in iteratortext.split_whitespace() //split_whitespace chunks the string out into words and returns an iterator
+   for word in iteratortext.split_whitespace()//split_whitespace chunks the string out into words and returns an iterator
    {
-
     let dictMatch = dict.best_levenshtein(word); //finds the closest word match between the dict and our plaintext result
-
+    
     if dictMatch.1 == 0 //if its an exact match, we do nothing
     {
         continue; 
     }
     else //if it isn't, we make a change
     {
+       
         correcttext= correcttext.replace(word, dictMatch.0 );
-        newconfidence = newconfidence+ 1.0;
 
     }
-}
+   }
 
-let numberofdif = levenshtein( &cracked.plaintext, &correcttext) as f64;//finds the number of changes made between the corrected and origional
+let numberofdif = levenshtein( &bytes_to_str(&cracked.plaintext), &correcttext) as f64;//finds the number of changes made between the corrected and origional
 
-println!("divisor {}\n", cracked.plaintext.len());
 let newconfidence: f64 = numberofdif/cracked.plaintext.len() as f64; //takes the number of levenstein differences over hte length. THis is the ratio between changes made and the length of the text. the higher the value the lower the confidence
  
 let errorcorrect =CrackResult{
-    plaintext: correcttext.clone(),
+    plaintext: str_to_bytes(&correcttext),
     confidence: newconfidence,
 };
-
 
     errorcorrect
    
@@ -66,27 +63,37 @@ let errorcorrect =CrackResult{
     #[cfg(test)]
     mod tests {
         use super::*;
+
     
         #[test]
         fn testing(){
-            let cracked= CrackResult{
-                plaintext: "wordss wishes this pig the quics brown fox jumpede over the lazy dog cat lion seal fish canary sf f a fash carp sharks".to_string(),
-                confidence: 4000.0
+
+            macro_rules! vec_of_strings {
+                ($($x:expr),*) => (vec![$($x.to_string()),*]);
             };
 
-            let targetplaintext=String::from("words wishes that pig the quick brown fox jumped over the lazy dog cat lion seal fish canary sf f a fish carp shark");
+            #[allow(dead_code)]
+            let mut newvect: &str= ["wordss", "wishes", "this", "pig", "the", "quics", "brown", "fox", "jumpede", "over", "the", "lazy", "dog", "cat", "lion", "seal", "fish", "canary", "sf", "f", "a", "fash", "carp", "sharks"];
+            let mut cracked= CrackResult{
+                plaintext: str_to_bytes(newvect),
+                confidence: 4000.0,
+            };
 
+            let mut targetplaintext=String::from("words wishes that pig the quick brown fox jumped over the lazy dog cat lion seal fish canary sf f a fish carp shark");
+            let mut bytestarget = str_to_bytes(&targetplaintext);
             let dict= Dictionary{
                 words: ["words", "wards", "wishes", "that", "pig", "the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "dog", "cat", "lion", "seal", "fish", "canary", "sf", "f", "a", "fosh", "carp", "shark", "pie", "sandle", "counter", "keyboard", "airplane", "fresh", "wishes"].to_vec()
             };
            // cracked.plaintext = "wards wishes this pig the quics brown fox jumpede over the lazy dog cat lion seal fish canary sf f a fash carp sharks".to_string();
-            println!("BEFORE TEST plaintext is  {}\n", cracked.plaintext);
+
+
+           println!("BEFORE TEST plaintext is  {}\n", bytes_to_str(&cracked.plaintext));
 
            let mut errorcorrect= spellcheck(&cracked, &dict);
 
-            println!("AFTER TEST plaintext is  {}\n", errorcorrect.plaintext);
+            println!("AFTER TEST Plaintext is  {}\n", bytes_to_str(&errorcorrect.plaintext));
 
-            assert_eq!(errorcorrect.plaintext,targetplaintext); 
+            assert_eq!(&errorcorrect.plaintext, &bytestarget); 
 
-        }}
-
+        }
+    }
