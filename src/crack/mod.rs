@@ -3,14 +3,17 @@
 //! This module holds all code needed for cracking ciphertexts specifically encrypted using the
 //! project encryption model: [`Encryptor`][`crate::ciphers::Encryptor`]
 
+mod crack;
 mod keylength;
 
+pub use crack::crack;
 pub use keylength::guesses;
 
 /// Every cracking strategy produces some plaintext along with a confidence value. If we run two
 /// different strategies, both are successful (returning `Some(CrackResult)`), but the plaintexts
 /// don't match, we could try to guess the correct one based on the confidence value.
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct CrackResult {
     /// Guessed plaintext.
     pub plaintext: Vec<u8>,
@@ -21,11 +24,4 @@ pub struct CrackResult {
     /// that needed to be "spell corrected" to a valid word in the dictionary, divided by the
     /// length of plaintext. This would
     pub confidence: f64,
-}
-
-/// Trait associated with cracking ciphertexts.
-pub trait Crack {
-    /// Attempts to crack the given ciphertext. Returns [`Some(CrackResult)`][`CrackResult`] when a
-    /// plaintext could be recovered, or [`None`] if not.
-    fn crack(&self, ciphertext: String) -> Option<CrackResult>;
 }
