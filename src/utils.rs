@@ -7,18 +7,18 @@ pub const ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz ";
 /// 0 => 'a', 1 => 'b', 2 => 'c', ..., 25 => 'z', 26 => ' '. Only the lowercase characters 'a'
 /// through 'z' and space ' ' are supported.  converted.
 pub trait CharToNum {
-    fn to_num(self) -> i8;
+    fn to_num(self) -> u8;
 }
 
 impl CharToNum for char {
-    fn to_num(self) -> i8 {
+    fn to_num(self) -> u8 {
         // Assert that the character is within our defined set ('a-z<space>') for debug builds.
         // This is not asserted when built with `cargo build --release`.
         debug_assert!(self == ' ' || self >= 'a' && self <= 'z');
 
         match self {
             ' ' => 26,
-            c => c as i8 - 'a' as i8,
+            c => c as u8 - 'a' as u8,
         }
     }
 }
@@ -30,31 +30,31 @@ pub trait NumToChar {
     fn to_char(self) -> char;
 }
 
-impl NumToChar for i8 {
+impl NumToChar for u8 {
     fn to_char(self) -> char {
-        const ALPHALEN: i8 = ALPHABET.len() as i8;
+        const ALPHALEN: u8 = ALPHABET.len() as u8;
 
         // reduce self to positive integer within ALPHALEN
         let num = self.rem_euclid(ALPHALEN);
 
         match num {
             26 => ' ',
-            n => ('a' as i8 + n) as u8 as char,
+            n => ('a' as u8 + n) as char,
         }
     }
 }
 
-/// An extension trait to shift `char` by some amount, using modulo to wrap around if needed.
-pub trait ShiftChar {
+/// An extension trait to shift by some amount, using modulo to wrap around if needed.
+pub trait Shift {
     fn shift(self, amount: i8) -> Self;
 }
 
-impl ShiftChar for char {
+impl Shift for char {
     fn shift(self, amount: i8) -> Self {
         const ALPHALEN: i8 = ALPHABET.len() as i8;
 
         // wrap the shift amount to within one alphabet length
-        let amount = amount.rem_euclid(ALPHALEN);
+        let amount = amount.rem_euclid(ALPHALEN) as u8;
 
         // get numerical value of this char
         let num = self.to_num();
@@ -64,19 +64,14 @@ impl ShiftChar for char {
     }
 }
 
-/// An extension trait to shift `char` by some amount, using modulo to wrap around if needed.
-pub trait ShiftNum {
-    fn shift(self, amount: i8) -> Self;
-}
-
-impl ShiftNum for i8 {
+impl Shift for u8 {
     fn shift(self, amount: i8) -> Self {
-        const ALPHALEN: i8 = ALPHABET.len() as i8;
+        const ALPHALEN: u8 = ALPHABET.len() as u8;
 
         // wrap the shift amount to within one alphabet length
-        let amount = amount.rem_euclid(ALPHALEN);
+        let amount = amount.rem_euclid(ALPHALEN as i8) as u8;
 
-        // add the shift amount
+        // add the shift amount, and mod if needed
         (self + amount).rem_euclid(ALPHALEN)
     }
 }
@@ -112,19 +107,19 @@ pub type Key = Vec<i8>;
 /// Normalizes a key with arbitrary shift amounts the smallest positive shift amounts.
 pub fn reduce_key(key: &mut Key) {
     for k in key.iter_mut() {
-        *k = k.to_char().to_num();
+        *k = k.rem_euclid(ALPHABET.len() as i8);
     }
 }
 
 /// Translate an entire &str to a Vec of bytes to more easily perform math.
 #[allow(dead_code)]
-pub fn str_to_bytes(s: &str) -> Vec<i8> {
-    s.chars().map(|c| c.to_num() as i8).collect()
+pub fn str_to_bytes(s: &str) -> Vec<u8> {
+    s.chars().map(|c| c.to_num()).collect()
 }
 
 /// Translate a slice of bytes back to a &str for presentation. For example, printing the recovered
 /// plaintext as a String.
 #[allow(dead_code)]
 pub fn bytes_to_str(bytes: &[u8]) -> String {
-    bytes.iter().map(|&b| (b as i8).to_char()).collect()
+    bytes.iter().map(|&b| b.to_char()).collect()
 }

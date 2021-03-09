@@ -1,11 +1,13 @@
 //! Definition of [`KeySchedule`] and various implementations of key scheduling.
 
 mod aab;
+mod lengthmod;
 mod offsetreverse;
 mod periodicrand;
 mod repeatingkey;
 
 pub use aab::Aab;
+pub use lengthmod::LengthMod;
 pub use offsetreverse::OffsetReverse;
 pub use periodicrand::PeriodicRand;
 pub use repeatingkey::RepeatingKey;

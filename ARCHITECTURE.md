@@ -232,11 +232,11 @@ Various handy, yet stand alone utility functions can go here. Currently there
 are three helper traits here that mostly help with character <-> number
 conversions.
 
-The most handy trait here is `ShiftChar` that is implemented for char types.
-The ShiftChar trait gives char a method `shift(self, i8) -> char`. It handles
-the shift operation that we need to do during encryption and decryption, so that
-we can easily shift forward or backward (negative numbers). An example of using
-the shift method in ROT13:
+The most handy trait here is `Shift` that is implemented for char and i8 types.
+The Shift trait gives char a method `shift(self, i8) -> char`. It handles the
+shift operation that we need to do during encryption and decryption, so that we
+can easily shift forward or backward (negative numbers). An example of using the
+shift method in ROT13:
 
 ```rust
 fn encrypt(&self, plaintext: &str) -> String {

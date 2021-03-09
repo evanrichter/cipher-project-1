@@ -1,7 +1,7 @@
 use crate::ciphers::schedulers::RepeatingKey;
 use crate::ciphers::{Cipher, KeySchedule};
 use crate::rng::{FromRng, Rng};
-use crate::utils::{reduce_key, Key, NumToChar, ShiftChar};
+use crate::utils::{reduce_key, Key, NumToChar, Shift};
 
 use std::cell::Cell;
 use std::fmt::Debug;
@@ -62,7 +62,7 @@ impl Encryptor<RepeatingKey> {
 }
 
 impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
-    fn encrypt(&self, plaintext: &str) -> String {
+    fn encrypt_into(&self, plaintext: &str, ciphertext: &mut String) {
         // get keylen and plaintext len
         let keylen = self.key.len();
         let ptlen = plaintext.len();
@@ -81,13 +81,10 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
         // create an iterator over the plaintext
         let mut plaintext = plaintext.chars().peekable();
 
-        // the encrypted string to return
-        let mut cipher = String::new();
-
         // continue encryption as long as there is a plaintext character left to read
         'encryption: while plaintext.peek().is_some() {
             // get key index to use as shift.
-            let index = self.keyschedule.schedule(cipher.len(), keylen, ptlen);
+            let index = self.keyschedule.schedule(ciphertext.len(), keylen, ptlen);
 
             // get the shift amount from the key, or insert a random character. A random character
             // is only inserted when the index is out of bounds of the key.
@@ -95,9 +92,9 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
                 Some(s) => *s,
                 None => {
                     // get a random number and wrap it to the correct range
-                    let rand = rng.next() as i8;
+                    let rand = rng.next() as u8;
                     // push the character to the ciphertext
-                    cipher.push(rand.to_char());
+                    ciphertext.push(rand.to_char());
                     continue 'encryption;
                 }
             };
@@ -107,14 +104,11 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
             let cipher_char = plaintext.next().unwrap().shift(shift);
 
             // push the enciphered character to the cipher string
-            cipher.push(cipher_char);
+            ciphertext.push(cipher_char);
         }
-
-        // return the ciphertext
-        cipher
     }
 
-    fn decrypt(&self, ciphertext: &str) -> String {
+    fn decrypt_into(&self, ciphertext: &str, plaintext: &mut String) {
         // get keylen
         let keylen = self.key.len();
 
@@ -123,9 +117,6 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
             .prev_plaintext_length
             .replace(None)
             .expect("encrypt must be called before decrypt");
-
-        // create an empty string to fill with plaintext
-        let mut plaintext = String::new();
 
         // read every byte of ciphertext
         'decryption: for (index, cipher) in ciphertext.chars().enumerate() {
@@ -145,9 +136,6 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
             // push the decrypted character into plaintext string
             plaintext.push(plain_char);
         }
-
-        // return plaintext
-        plaintext
     }
 }
 
