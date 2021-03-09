@@ -92,7 +92,7 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
                 Some(s) => *s,
                 None => {
                     // get a random number and wrap it to the correct range
-                    let rand = rng.next() as i8;
+                    let rand = rng.next() as u8;
                     // push the character to the ciphertext
                     ciphertext.push(rand.to_char());
                     continue 'encryption;
