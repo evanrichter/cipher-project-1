@@ -29,8 +29,8 @@ pub struct CrackResult {
 
 #[test]
 fn end_to_end() {
-    use crate::ciphers;
     use crate::ciphers::schedulers::*;
+    use crate::dict::BytesDictionary;
     use crate::utils::*;
     use crate::{Cipher, Dictionary, Encryptor, Generator, Rng};
 
@@ -71,13 +71,15 @@ fn end_to_end() {
         bytes_to_str(&best.plaintext)
     );
 
+    let bytesdict = BytesDictionary::from_dict(&dict);
+
     // spell check it
-    let spell_checked = spellcheck(&best, &dict);
+    let spell_checked = spellcheck(&best, &bytesdict);
     println!("spell checked:\n{}", bytes_to_str(&spell_checked.plaintext));
 
-    assert_eq!(bytes_to_str(&spell_checked.plaintext), plaintext);
-
-    let decrypted = encryptor.decrypt(&ciphertext);
-    println!("decrypted: {}", decrypted);
-    println!();
+    assert_eq!(
+        bytes_to_str(&spell_checked.plaintext),
+        plaintext,
+        "cracked and spell checked result does not match actual plaintext"
+    );
 }

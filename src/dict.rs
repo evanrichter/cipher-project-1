@@ -1,5 +1,7 @@
 //! Module for [`Dictionary`].
 
+use crate::utils::str_to_bytes;
+
 /// A dictionary will hold an alphabetized wordlist. Each word only consists of lowercase ASCII
 /// alphabetic characters.
 #[derive(Clone, Debug)]
@@ -18,6 +20,7 @@ impl<'a> Dictionary<'a> {
     pub fn from_string(source: &'a mut String) -> Self {
         // lowercase the whole source string
         *source = source.to_ascii_lowercase();
+
         let mut words: Vec<&str> = source
             // trim off starting and trailing whitespace
             .trim()
@@ -61,6 +64,81 @@ impl<'a> Dictionary<'a> {
             .min_by_key(|x| x.1)
             .expect("spell correct with an empty Dictionary")
     }
+}
+
+pub struct BytesDictionary {
+    pub words: Vec<Vec<u8>>,
+}
+
+impl BytesDictionary {
+    pub fn from_dict<'a>(dict: &Dictionary<'a>) -> Self {
+        use crate::utils::CharToNum;
+
+        let words = dict
+            .words
+            .iter()
+            .map(|w| {
+                let mut w = str_to_bytes(w);
+                w.push(' '.to_num());
+                w
+            })
+            .collect();
+
+        Self { words }
+    }
+
+    /// Find the closest word by Levenshtein distance.
+    ///
+    /// Returns (dictionary_word, edit_distance)
+    ///
+    /// The lower the score, the fewer edits needed to match the dictionary word.
+    pub fn best_levenshtein<'a>(&'a self, word: &[u8]) -> (&'a [u8], usize) {
+        // iterate over words in dictionary
+        self.words
+            .iter()
+            // create tuples of &str and the respective levenshtein distance
+            .map(|s| (s.as_slice(), levenshtein(word, s)))
+            // return the best word-score tuple
+            .min_by_key(|x| x.1)
+            .expect("spell correct with an empty Dictionary")
+    }
+}
+
+pub fn levenshtein<'a, 'b, Iter1: ?Sized, Iter2: ?Sized, Elem1, Elem2>(
+    a: &'a Iter1,
+    b: &'b Iter2,
+) -> usize
+where
+    &'a Iter1: IntoIterator<Item = Elem1>,
+    &'b Iter2: IntoIterator<Item = Elem2>,
+    Elem1: PartialEq<Elem2>,
+{
+    use std::cmp::min;
+
+    let b_len = b.into_iter().count();
+
+    if a.into_iter().next().is_none() {
+        return b_len;
+    }
+
+    let mut cache: Vec<usize> = (1..b_len + 1).collect();
+
+    let mut result = 0;
+
+    for (i, a_elem) in a.into_iter().enumerate() {
+        result = i + 1;
+        let mut distance_b = i;
+
+        for (j, b_elem) in b.into_iter().enumerate() {
+            let cost = if a_elem == b_elem { 0usize } else { 1usize };
+            let distance_a = distance_b + cost;
+            distance_b = cache[j];
+            result = min(result + 1, min(distance_a, distance_b + 1));
+            cache[j] = result;
+        }
+    }
+
+    result
 }
 
 // Tests for the Dictionary type. These get run with `cargo test`

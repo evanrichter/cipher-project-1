@@ -1,60 +1,92 @@
 //! Module for correcting nearly perfect plaintext, into a plausible plaintext that actually could
 //! have been generated from the source dictionary.
 
-use core::f64;
-
-use strsim::levenshtein;
-
 use super::CrackResult;
-use crate::{utils::bytes_to_str, utils::str_to_bytes, Dictionary};
+use crate::dict::{levenshtein, BytesDictionary};
+
+use std::cmp::min;
+
+struct Word<'a> {
+    word: &'a [u8],
+    score: usize,
+    bytes_used: usize,
+}
+
+impl<'a> Word<'a> {
+    // higher score is better
+    //
+    // prefer longer words and smaller edit-distance
+    fn score(&self) -> usize {
+        (self.bytes_used as f32 / self.score as f32 * 10000.0) as usize
+    }
+}
 
 /// This function exploits the fact that we know the source dictionary (or can guess between a
 /// small number of dictionaries), and uses spell checking strategies to fix up any incorrectly
 /// guessed shift values from the previous step.
-
 #[allow(dead_code)]
-pub fn spellcheck(cracked: &CrackResult, dict: &Dictionary) -> CrackResult {
-    let mut correcttext: String; //the string we will correct
-    let iteratortext: String; //this is used on the for loop as an iterator
+pub fn spellcheck(cracked: &CrackResult, dict: &BytesDictionary) -> CrackResult {
+    //the string we will correct
+    let mut plaintext: Vec<u8> = Vec::with_capacity(cracked.plaintext.len());
 
-    //convert from bytes to str
-    iteratortext = bytes_to_str(&cracked.plaintext);
+    // the longest word in the dictionary given
+    //
+    // I don't know why it needs a +1 ...
+    let longest_word = dict.words.iter().map(|w| w.len()).max().unwrap() + 1;
 
-    correcttext = bytes_to_str(&cracked.plaintext).to_string();
+    // a slice where the start is always pointing to the next word to spell check, and the end goes
+    // all the way to the end of the given plaintext.
+    let mut next_slice = cracked.plaintext.as_slice();
 
-    //compare words to dict and correct inaccuracies
-    for word in iteratortext.split_whitespace()
-    //split_whitespace chunks the string out into words and returns an iterator
-    {
-        let dict_match = dict.best_levenshtein(word); //finds the closest word match between the dict and our plaintext result
+    // temporary vec to hold scores for scanned words
+    let mut next_words: Vec<Word> = Vec::new();
 
-        if dict_match.1 == 0
-        //if its an exact match, we do nothing
-        {
-            continue;
-        } else
-        //if it isn't, we make a change
-        {
-            correcttext = correcttext.replace(word, dict_match.0);
+    while next_slice.len() > 1 {
+        // farthest right to try to match
+        let rbound = min(longest_word, next_slice.len());
+
+        // find the next possible words
+        for bytes_used in 1..rbound {
+            let (word, score) = dict.best_levenshtein(&next_slice[..bytes_used]);
+            let word = Word {
+                word,
+                score,
+                bytes_used,
+            };
+            next_words.push(word);
         }
+
+        // pick the best word from next_words
+        let best = next_words.iter().max_by_key(|word| word.score()).unwrap();
+
+        // add the best word to the plaintext
+        plaintext.extend_from_slice(best.word);
+
+        // advance to the next word by however many characters we read
+        next_slice = &next_slice[best.bytes_used..];
+
+        // clear the next_words vec
+        next_words.clear();
     }
 
-    //caclulate the confidence
-    let numberofdif = levenshtein(&bytes_to_str(&cracked.plaintext), &correcttext) as f64; //finds the number of changes made between the corrected and origional
-    let newconfidence: f64 = numberofdif / cracked.plaintext.len() as f64; //takes the number of levenstein differences over hte length. THis is the ratio between changes made and the length of the text. the higher the value the lower the confidence
+    // pop off the last space because all dictionary words come with a space
+    plaintext.pop();
 
-    //create the output
-    let errorcorrect = CrackResult {
-        plaintext: str_to_bytes(&correcttext),
-        confidence: newconfidence,
-    };
-    //final result
-    errorcorrect
+    // overall confidence is levenshtein edit distance from what we recovered to the given
+    // near-plaintext. (Not sure how useful this is...)
+    let confidence = levenshtein(&plaintext, &cracked.plaintext) as f64;
+
+    CrackResult {
+        plaintext,
+        confidence,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::*;
+    use crate::Dictionary;
 
     #[test]
     fn testing() {
@@ -66,7 +98,7 @@ mod tests {
 
         let targetplaintext=String::from("words wishes that pig the quick brown fox jumped over the lazy dog cat lion seal fish canary sf f a fish carp shark");
         let bytestarget = str_to_bytes(&targetplaintext);
-        let dict = Dictionary {
+        let dict = BytesDictionary::from_dict(&Dictionary {
             words: [
                 "words", "wards", "wishes", "that", "pig", "the", "quick", "brown", "fox",
                 "jumped", "over", "the", "lazy", "dog", "cat", "lion", "seal", "fish", "canary",
@@ -74,7 +106,7 @@ mod tests {
                 "airplane", "fresh", "wishes",
             ]
             .to_vec(),
-        };
+        });
         // cracked.plaintext = "wards wishes this pig the quics brown fox jumpede over the lazy dog cat lion seal fish canary sf f a fash carp sharks".to_string();
 
         println!(
