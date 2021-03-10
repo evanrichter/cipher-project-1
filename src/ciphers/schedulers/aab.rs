@@ -5,7 +5,7 @@ use super::KeySchedule;
 ///
 /// It is called "AAB" scheduler because if the key is "AB" then this scheduler could produce an
 /// effective key of "AAB"
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Aab {
     /// Number of characters to repeat in the key
     pub num_chars: usize,

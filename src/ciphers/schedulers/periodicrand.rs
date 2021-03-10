@@ -14,7 +14,7 @@ use super::RepeatingKey;
 /// If the key is `ABCDEFG`, and the key schedule is `PeriodicRand { period: 3, start: 1,
 /// overwrite: false }`, then the expected output keystream is `A_BCD_EFG_ABC_DEF_GAB_CDE_FG`
 /// repeating, where `_` is some random character.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct PeriodicRand {
     /// Number of characters between random chars
     pub period: usize,

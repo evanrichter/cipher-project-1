@@ -29,6 +29,7 @@ pub trait KeySchedule {
 }
 
 /// Base scheduler type that exists to randomly generate many kinds of schedulers
+#[derive(Debug, Clone, Copy)]
 pub enum RandomBaseScheduler {
     Aab(Aab),
     LengthMod(LengthMod),
@@ -62,6 +63,7 @@ impl KeySchedule for RandomBaseScheduler {
 /// Overarching scheduler type that exists to randomly generate many kinds of schedulers. At the
 /// highest level, there are multiple levels of PeriodicRand, and at the base, any one of the
 /// normal schedulers: Aab, LengthMod, OffsetReverse, and RepeatingKey
+#[derive(Debug, Clone, Copy)]
 pub enum RandomScheduler {
     /// No PeriodicRand layer
     Zero(RandomBaseScheduler),

@@ -2,7 +2,7 @@
 // original key this leads to variable effective key length to confuse key length guessing
 //
 // For Example: ABCDEF with offset 2 would turn into FEABCDEF
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct OffsetReverse {
     offset: usize,
 }

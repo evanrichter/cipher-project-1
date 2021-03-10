@@ -14,7 +14,7 @@ pub struct Encryptor<K: KeySchedule + Debug> {
     /// The key length is called `t` in the description and is guaranteed to be between 1 and 24.
     key: Key,
     /// The scheduling algorithm for this encryptor
-    keyschedule: K,
+    pub keyschedule: K,
     /// Rng to insert random characters when needed
     rng: Rng,
     /// The length of the plaintext most recently encrypted, or `None` if no plaintext was

@@ -7,7 +7,7 @@ mod crack;
 mod keylength;
 mod spellcheck;
 
-pub use crack::crack;
+pub use crack::{best_crack, crack, Frequencies};
 pub use keylength::guesses;
 pub use spellcheck::spellcheck;
 
