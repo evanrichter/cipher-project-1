@@ -34,51 +34,73 @@ fn end_to_end() {
     use crate::utils::*;
     use crate::{Cipher, Dictionary, Encryptor, Generator, Rng};
 
+    //
+    // SETUP
+    //
+
     let mut words = std::fs::read_to_string("words/default.txt").unwrap();
     let dict = Dictionary::from_string(&mut words);
 
     let mut gen = Generator::with_dict(&dict);
 
     let sched = PeriodicRand {
-        period: 18,
-        start: 3,
+        period: 32,
+        start: 5,
         overwrite: true,
     };
-    let key = vec![0, 1, -1, 13, 14, -7, 9];
+    let key = vec![0, 1, -1, 13, 14, -7, 9, 10, 10, 12, 1, 2, 3, 4];
 
     let encryptor = Encryptor::new(key, sched, Rng::default());
 
-    let plaintext = gen.generate_words(100);
+    let plaintext = gen.generate_words(300);
     let ciphertext = encryptor.encrypt(&plaintext);
-    println!("encrypted: {}", ciphertext);
-    println!("plaintext:\n{}", plaintext);
+    println!("encrypted:\n{}\n", ciphertext);
+    println!("plaintext:\n{}\n", plaintext);
 
     let cipherbytes = str_to_bytes(&ciphertext);
+
+    //
+    // KEYLENGTH GUESSING
+    //
+
     let keylen_guesses = guesses(&cipherbytes);
 
-    let mut crack_results = Vec::new();
+    const NUMGUESSES: usize = 100;
+
+    //
+    // CRACKING SLICES
+    //
+
+    let mut crack_results = Vec::with_capacity(NUMGUESSES);
 
     let baseline_freqs = crack::Frequencies::from_dict(&dict);
-    for (keylen, _) in keylen_guesses.iter().take(15) {
+
+    for (keylen, _) in keylen_guesses.iter().take(NUMGUESSES) {
         let res = crack(&cipherbytes, *keylen, &baseline_freqs);
         crack_results.push(res);
     }
 
-    // try to be lucky
     let best = crack::best_crack(&crack_results);
     println!(
-        "best crack result from known keylength:\n{}",
+        "best crack result from known keylength:\n{}\n",
         bytes_to_str(&best.plaintext)
     );
 
+    //
+    // SPELL CHECKING
+    //
+
+    let mut spell_checked = Vec::with_capacity(NUMGUESSES);
     let bytesdict = BytesDictionary::from_dict(&dict);
 
-    // spell check it
-    let spell_checked = spellcheck(&best, &bytesdict);
-    println!("spell checked:\n{}", bytes_to_str(&spell_checked.plaintext));
+    for crack in crack_results {
+        spell_checked.push(spellcheck(&crack, &bytesdict));
+    }
+
+    let best = crack::best_crack(&spell_checked);
 
     assert_eq!(
-        bytes_to_str(&spell_checked.plaintext),
+        bytes_to_str(&best.plaintext),
         plaintext,
         "cracked and spell checked result does not match actual plaintext"
     );

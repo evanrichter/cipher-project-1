@@ -17,7 +17,7 @@ impl<'a> Word<'a> {
     //
     // prefer longer words and smaller edit-distance
     fn score(&self) -> usize {
-        (self.bytes_used as f32 / self.score as f32 * 10000.0) as usize
+        (self.bytes_used as f32 / self.score as f32 * 1000.0) as usize
     }
 }
 
@@ -78,7 +78,7 @@ pub fn spellcheck(cracked: &CrackResult, dict: &BytesDictionary) -> CrackResult 
 
     CrackResult {
         plaintext,
-        confidence,
+        confidence: confidence * cracked.confidence,
     }
 }
 
