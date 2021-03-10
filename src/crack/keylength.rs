@@ -5,7 +5,7 @@
 #[allow(dead_code)]
 pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
     const KEYSIZE_LO: usize = 3;
-    const KEYSIZE_HI: usize = 70;
+    const KEYSIZE_HI: usize = 50;
 
     let mut keysizes: Vec<(usize, f64)> = Vec::with_capacity(KEYSIZE_HI);
 

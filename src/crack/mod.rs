@@ -44,11 +44,11 @@ fn end_to_end() {
     let mut gen = Generator::with_dict(&dict);
 
     let sched = PeriodicRand {
-        period: 32,
+        period: 18,
         start: 5,
         overwrite: true,
     };
-    let key = vec![0, 1, -1, 13, 14, -7, 9, 10, 10, 12, 1, 2, 3, 4];
+    let key = vec![10, 10, 12, 1, 2, 3, 4];
 
     let encryptor = Encryptor::new(key, sched, Rng::default());
 
@@ -65,18 +65,16 @@ fn end_to_end() {
 
     let keylen_guesses = guesses(&cipherbytes);
 
-    const NUMGUESSES: usize = 100;
-
     //
     // CRACKING SLICES
     //
 
-    let mut crack_results = Vec::with_capacity(NUMGUESSES);
+    let mut crack_results = Vec::new();
 
     let baseline_freqs = crack::Frequencies::from_dict(&dict);
 
-    for (keylen, _) in keylen_guesses.iter().take(NUMGUESSES) {
-        let res = crack(&cipherbytes, *keylen, &baseline_freqs);
+    for (keylen, _) in keylen_guesses {
+        let res = crack(&cipherbytes, keylen, &baseline_freqs);
         crack_results.push(res);
     }
 
@@ -90,7 +88,7 @@ fn end_to_end() {
     // SPELL CHECKING
     //
 
-    let mut spell_checked = Vec::with_capacity(NUMGUESSES);
+    let mut spell_checked = Vec::new();
     let bytesdict = BytesDictionary::from_dict(&dict);
 
     for crack in crack_results {
@@ -98,6 +96,11 @@ fn end_to_end() {
     }
 
     let best = crack::best_crack(&spell_checked);
+
+    println!(
+        "best crack result after spell check:\n{}\n",
+        bytes_to_str(&best.plaintext)
+    );
 
     assert_eq!(
         bytes_to_str(&best.plaintext),
