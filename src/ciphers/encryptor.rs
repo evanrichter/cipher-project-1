@@ -1,4 +1,3 @@
-use crate::ciphers::schedulers::RepeatingKey;
 use crate::ciphers::{Cipher, KeySchedule};
 use crate::rng::{FromRng, Rng};
 use crate::utils::{reduce_key, Key, NumToChar, Shift};
@@ -14,7 +13,7 @@ pub struct Encryptor<K: KeySchedule + Debug> {
     /// The key length is called `t` in the description and is guaranteed to be between 1 and 24.
     key: Key,
     /// The scheduling algorithm for this encryptor
-    keyschedule: K,
+    pub keyschedule: K,
     /// Rng to insert random characters when needed
     rng: Rng,
     /// The length of the plaintext most recently encrypted, or `None` if no plaintext was
@@ -42,19 +41,6 @@ impl<K: KeySchedule + Debug> Encryptor<K> {
         Self {
             key,
             keyschedule,
-            rng,
-            prev_plaintext_length: Cell::new(None),
-        }
-    }
-}
-
-impl Encryptor<RepeatingKey> {
-    /// Encryptor with a simple repeating key scheduler.
-    pub fn repeating_key(mut key: Key, rng: Rng) -> Self {
-        reduce_key(&mut key);
-        Self {
-            key,
-            keyschedule: RepeatingKey,
             rng,
             prev_plaintext_length: Cell::new(None),
         }
@@ -166,7 +152,10 @@ mod tests {
 
     #[test]
     fn repeating_key_stress() {
-        let encryptor = Encryptor::repeating_key(vec![1, 2, 3, 4, 5, 6, 7, 8, 9], Rng::default());
+        let key = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let sched = crate::ciphers::schedulers::RepeatingKey;
+
+        let encryptor = Encryptor::new(key, sched, Rng::default());
         stresstest(encryptor, 10000).unwrap();
     }
 }

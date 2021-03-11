@@ -6,42 +6,39 @@ mod gen;
 mod rng;
 mod utils;
 
-// these "use" statements bring the structs into scope
-pub use ciphers::Encryptor;
-pub use dict::Dictionary;
-pub use gen::Generator;
-pub use rng::Rng;
+use ciphers::schedulers::RandomScheduler;
+use rng::{FromRng, Rng};
 
-// this "use" statement brings the traits into scope so we can use their methods
-pub use ciphers::{Cipher, KeySchedule};
+/*
+use ciphers::Encryptor;
+use dict::{BytesDictionary, Dictionary};
+use gen::Generator;
+use ciphers::{Cipher, KeySchedule};
+*/
 
 fn main() -> anyhow::Result<()> {
-    let mut words = std::fs::read_to_string("words/default.txt")?;
-    let dict = Dictionary::from_string(&mut words);
+    // threads for cracking
+    let cpus = num_cpus::get();
+    let (schedules, results, _) = crack::worker::spawn_workers(cpus - 2);
 
-    println!("{} words in dictionary", dict.len());
+    // thread for generating RandomSchedulers
+    std::thread::spawn(move || {
+        let mut rng = Rng::with_seed(13, 37);
 
-    let mut gen = Generator::with_dict(&dict);
+        loop {
+            let sched = RandomScheduler::from_rng(&mut rng);
 
-    println!("generating 5 sentences with 10 words each then encrypting...\n");
+            // repeat the same schedule 5 times
+            for _ in 0..5 {
+                schedules.send(sched.clone()).unwrap();
+            }
+        }
+    });
 
-    let cipher = ciphers::Encryptor::repeating_key(vec![0, 1, -1], Rng::default());
-    for _ in 0..5 {
-        let plaintext = gen.generate_words(10);
-        let ciphertext = cipher.encrypt(&plaintext);
-        let decrypted = cipher.decrypt(&ciphertext);
-
-        println!("plaintext: {}", plaintext);
-        println!("encrypted: {}", ciphertext);
-        println!("decrypted: {}", decrypted);
-        println!();
+    // (main) thread for printing results
+    loop {
+        let (sched, keylen, success) = results.recv().unwrap();
+        let success = ((1.0 - success.min(1.0)) * 100.0) as u8;
+        println!("{:>3}% correct  {:?} keylen: {}", success, sched, keylen);
     }
-
-    Ok(())
-}
-
-#[cfg(test)]
-#[test]
-fn test_main() {
-    main().expect("main threw an error");
 }

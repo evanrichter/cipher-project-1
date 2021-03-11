@@ -2,7 +2,7 @@
 // original key this leads to variable effective key length to confuse key length guessing
 //
 // For Example: ABCDEF with offset 2 would turn into FEABCDEF
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct OffsetReverse {
     offset: usize,
 }
@@ -24,6 +24,14 @@ impl KeySchedule for OffsetReverse {
             //calculate the index adjusting for any previous offset
             let adj_index = (index % eff_key_length) - self.offset;
             adj_index
+        }
+    }
+}
+
+impl crate::rng::FromRng for OffsetReverse {
+    fn from_rng(rng: &mut crate::Rng) -> Self {
+        Self {
+            offset: rng.next() as usize % 17,
         }
     }
 }

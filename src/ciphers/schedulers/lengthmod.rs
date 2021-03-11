@@ -1,7 +1,7 @@
 //This scheduler mods the plaintext length to produce a the index. THe final result is also a function of index and key_lenth in order to inject a certain amount of randomness and because we didn't have an example where all 3 variables were used.
 
-#[derive(Debug)]
-pub struct LengthMod {}
+#[derive(Debug, Clone, Copy)]
+pub struct LengthMod;
 
 use super::KeySchedule;
 

@@ -132,8 +132,8 @@ impl FromRng for Key {
             }
             x += 1;
 
-            // generate a keylength between 1 and 24
-            let keylen = rng.next() as usize % 24 + 1;
+            // generate a keylength between 5 and 19
+            let keylen = rng.next() as usize % 19 + 5;
 
             // generate and fill the key values with random values
             let mut key = Vec::with_capacity(keylen);
