@@ -6,6 +6,7 @@
 mod crack;
 mod keylength;
 mod spellcheck;
+pub mod worker;
 
 pub use crack::{best_crack, crack, Frequencies};
 pub use keylength::guesses;

@@ -1,4 +1,3 @@
-use crate::ciphers::schedulers::RepeatingKey;
 use crate::ciphers::{Cipher, KeySchedule};
 use crate::rng::{FromRng, Rng};
 use crate::utils::{reduce_key, Key, NumToChar, Shift};
@@ -42,19 +41,6 @@ impl<K: KeySchedule + Debug> Encryptor<K> {
         Self {
             key,
             keyschedule,
-            rng,
-            prev_plaintext_length: Cell::new(None),
-        }
-    }
-}
-
-impl Encryptor<RepeatingKey> {
-    /// Encryptor with a simple repeating key scheduler.
-    pub fn repeating_key(mut key: Key, rng: Rng) -> Self {
-        reduce_key(&mut key);
-        Self {
-            key,
-            keyschedule: RepeatingKey,
             rng,
             prev_plaintext_length: Cell::new(None),
         }

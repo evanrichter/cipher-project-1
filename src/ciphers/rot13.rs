@@ -1,5 +1,5 @@
+use crate::ciphers::Cipher;
 use crate::utils::Shift;
-use crate::Cipher;
 
 /// A simple ROT13 cipher.
 #[derive(Debug)]
