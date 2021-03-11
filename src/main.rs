@@ -42,9 +42,3 @@ fn main() -> anyhow::Result<()> {
         println!("{:>3}% correct  {:?} keylen: {}", success, sched, keylen);
     }
 }
-
-#[cfg(test)]
-#[test]
-fn test_main() {
-    main().expect("main threw an error");
-}

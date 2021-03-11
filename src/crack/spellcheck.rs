@@ -85,8 +85,8 @@ pub fn spellcheck(cracked: &CrackResult, dict: &BytesDictionary) -> CrackResult 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dict::Dictionary;
     use crate::utils::*;
-    use crate::Dictionary;
 
     #[test]
     fn testing() {

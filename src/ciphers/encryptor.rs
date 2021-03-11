@@ -152,7 +152,10 @@ mod tests {
 
     #[test]
     fn repeating_key_stress() {
-        let encryptor = Encryptor::repeating_key(vec![1, 2, 3, 4, 5, 6, 7, 8, 9], Rng::default());
+        let key = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let sched = crate::ciphers::schedulers::RepeatingKey;
+
+        let encryptor = Encryptor::new(key, sched, Rng::default());
         stresstest(encryptor, 10000).unwrap();
     }
 }

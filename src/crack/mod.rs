@@ -31,9 +31,11 @@ pub struct CrackResult {
 #[test]
 fn end_to_end() {
     use crate::ciphers::schedulers::*;
-    use crate::dict::BytesDictionary;
+    use crate::ciphers::{Cipher, Encryptor};
+    use crate::dict::{BytesDictionary, Dictionary};
+    use crate::gen::Generator;
+    use crate::rng::Rng;
     use crate::utils::*;
-    use crate::{Cipher, Dictionary, Encryptor, Generator, Rng};
 
     //
     // SETUP

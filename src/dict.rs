@@ -129,7 +129,7 @@ mod tests {
         let mut s = String::from("abc def ghi jkl");
         let d = Dictionary::from_string(&mut s);
 
-        assert_eq!(d.len(), 4);
+        assert_eq!(d.words.len(), 4);
         assert_eq!(d.words[0], "abc");
         assert_eq!(d.words[1], "def");
         assert_eq!(d.words[2], "ghi");
@@ -141,7 +141,7 @@ mod tests {
         let mut s = String::from("abc def ghi jkl");
         let d = Dictionary::from_string(&mut s);
 
-        assert_eq!(d.len(), 4);
+        assert_eq!(d.words.len(), 4);
         assert_eq!(d.words.len(), 4);
     }
 
@@ -150,7 +150,7 @@ mod tests {
         let mut s = String::from("abc def g.hi jkl");
         let d = Dictionary::from_string(&mut s);
 
-        assert_eq!(d.len(), 3);
+        assert_eq!(d.words.len(), 3);
         assert_eq!(d.words[0], "abc");
         assert_eq!(d.words[1], "def");
         assert_eq!(d.words[2], "jkl");
@@ -161,7 +161,7 @@ mod tests {
         let mut s = String::from("def jkl abc ghi");
         let d = Dictionary::from_string(&mut s);
 
-        assert_eq!(d.len(), 4);
+        assert_eq!(d.words.len(), 4);
         assert_eq!(d.words[0], "abc");
         assert_eq!(d.words[1], "def");
         assert_eq!(d.words[2], "ghi");
@@ -173,22 +173,10 @@ mod tests {
         let mut s = String::from("    abc \n  def \t ghi   jkl\n\n  ");
         let d = Dictionary::from_string(&mut s);
 
-        assert_eq!(d.len(), 4);
+        assert_eq!(d.words.len(), 4);
         assert_eq!(d.words[0], "abc");
         assert_eq!(d.words[1], "def");
         assert_eq!(d.words[2], "ghi");
         assert_eq!(d.words[3], "jkl");
-    }
-
-    #[test]
-    fn levenshtein() {
-        let mut s = String::from("abc def ghi jkl");
-        let d = Dictionary::from_string(&mut s);
-
-        assert_eq!(d.best_levenshtein("acb"), ("abc", 2));
-        assert_eq!(d.best_levenshtein("de"), ("def", 1));
-        assert_eq!(d.best_levenshtein("ghi"), ("ghi", 0));
-        assert_eq!(d.best_levenshtein(" jkl "), ("jkl", 2));
-        assert_eq!(d.best_levenshtein("abc def"), ("abc", 4));
     }
 }

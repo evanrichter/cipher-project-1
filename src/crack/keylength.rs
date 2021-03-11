@@ -64,11 +64,9 @@ pub fn hamming_distance(a: &[u8], b: &[u8]) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ciphers::{Cipher, Encryptor, KeySchedule};
     use crate::rng::FromRng;
-    use crate::Cipher;
-    use crate::Encryptor;
-    use crate::KeySchedule;
-    use crate::Rng;
+    use crate::rng::Rng;
 
     // import schedulers we need
     use crate::ciphers::schedulers::{PeriodicRand, RepeatingKey};
@@ -87,8 +85,8 @@ mod tests {
 
         // generate plaintext
         let mut words = std::fs::read_to_string("words/default.txt").unwrap();
-        let dict = crate::Dictionary::from_string(&mut words);
-        let mut gen = crate::Generator::with_dict(&dict);
+        let dict = crate::dict::Dictionary::from_string(&mut words);
+        let mut gen = crate::gen::Generator::with_dict(&dict);
         let plaintext = gen.generate_words(1000);
 
         // create the encryptor
@@ -181,8 +179,8 @@ mod tests {
 
         // plaintext generator
         let mut words = std::fs::read_to_string("words/default.txt").unwrap();
-        let dict = crate::Dictionary::from_string(&mut words);
-        let mut gen = crate::Generator::with_dict(&dict);
+        let dict = crate::dict::Dictionary::from_string(&mut words);
+        let mut gen = crate::gen::Generator::with_dict(&dict);
 
         // reusable Vecs for ciphertext, key, plaintext
         let mut plaintext = String::new();
