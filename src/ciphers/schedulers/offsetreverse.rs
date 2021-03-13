@@ -11,19 +11,20 @@ use super::KeySchedule;
 
 impl KeySchedule for OffsetReverse {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
+        // fix the offset if it's larger than the key
+        let offset = self.offset % (key_length + 1);
+
         //get the index value of the last character for zero based array
-        let last_char = key_length - 1;
-        let eff_key_length = key_length + self.offset;
+        let eff_key_length = key_length + offset;
+        let eff_index = index % eff_key_length;
 
         //Before the offset
-        if index % eff_key_length < self.offset {
+        if eff_index < offset {
             //calculate the inverted index (index starting from the last character)
-            let inverted_index = last_char - (index % eff_key_length);
-            inverted_index
+            eff_key_length - eff_index - offset - 1
         } else {
             //calculate the index adjusting for any previous offset
-            let adj_index = (index % eff_key_length) - self.offset;
-            adj_index
+            eff_index - offset
         }
     }
 }
@@ -90,8 +91,8 @@ mod tests {
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
                 let computed = offsetreverse.schedule(index, key.len(), 1000);
-                println!("{}", key[computed]);
-                println!("{}", effective_key[expected]);
+                println!("computed  {}", key[computed] as char);
+                println!("should be {}", effective_key[expected] as char);
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
             }
