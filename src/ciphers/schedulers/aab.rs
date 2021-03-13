@@ -17,21 +17,25 @@ pub struct Aab {
 
 impl KeySchedule for Aab {
     fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
+        // adjust num_chars and offset by keylength
+        let num_chars = self.num_chars % key_length;
+        let offset = self.offset % key_length;
+
         // effective key length is key_length + number of repeated chars
-        let eff_key_length = key_length + self.num_chars * self.num_reps;
+        let eff_key_length = key_length + num_chars * self.num_reps;
 
         // effective index
         let index = index % eff_key_length;
 
-        if index < self.offset {
+        if index < offset {
             // before any repetition
             index
-        } else if index < self.offset + (self.num_reps + 1) * self.num_chars {
+        } else if index < offset + (self.num_reps + 1) * num_chars {
             // within the repetition range
-            (index - self.offset) % self.num_chars + self.offset
+            (index - offset) % num_chars + offset
         } else {
             // after repeated range
-            index - self.num_chars * self.num_reps
+            index - num_chars * self.num_reps
         }
     }
 }
