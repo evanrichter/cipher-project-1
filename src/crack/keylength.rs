@@ -3,11 +3,12 @@
 /// based ciphers, but this implementation worked against the linked cryptopals challenge based on
 /// multi-byte xor.
 #[allow(dead_code)]
-pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
-    const KEYSIZE_LO: usize = 3;
-    const KEYSIZE_HI: usize = 50;
+pub fn guesses(ciphertext: &[u8], keysizes: &mut Vec<(usize, f64)>) {
+    // clear previous keysizes
+    keysizes.clear();
 
-    let mut keysizes: Vec<(usize, f64)> = Vec::with_capacity(KEYSIZE_HI);
+    const KEYSIZE_LO: usize = 3;
+    const KEYSIZE_HI: usize = 120;
 
     for keysize in KEYSIZE_LO..KEYSIZE_HI {
         let score = hamming_distance_between_chunks(ciphertext, keysize);
@@ -29,9 +30,6 @@ pub fn guesses(ciphertext: &[u8]) -> Vec<(usize, f64)> {
 
     // sort by best keysize, lowest first
     keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
-
-    // return keysizes with their scores
-    keysizes
 }
 
 /// Take 4 chunks of size `chunksize` and calculate a normalized score of the Hamming distance
@@ -99,11 +97,12 @@ mod tests {
         let ciphertext = crate::utils::str_to_bytes(&ciphertext);
 
         // calculate guesses
-        let guesses = guesses(&ciphertext);
+        let mut keysizes = Vec::new();
+        guesses(&ciphertext, &mut keysizes);
 
         // count how many integer multiples (including exact matches) of the expected keylength are
         // in the top results
-        let integer_multiples = guesses
+        let integer_multiples = keysizes
             .iter()
             .map(|(guess, _score)| guess)
             // only look at the top 5 guesses
@@ -186,6 +185,7 @@ mod tests {
         let mut plaintext = String::new();
         let mut ciphertext = String::new();
         let mut key = Vec::new();
+        let mut keysizes = Vec::new();
 
         // total runs to do
         const RUNS: usize = 1000;
@@ -215,11 +215,11 @@ mod tests {
             let ct_bytes = crate::utils::str_to_bytes(&ciphertext);
 
             // get keylength guesses
-            let guesses = guesses(&ct_bytes);
+            guesses(&ct_bytes, &mut keysizes);
 
             // count how many integer multiples (including exact matches) of the expected keylength are
             // in the top results
-            let guessed = guesses
+            let guessed = keysizes
                 .iter()
                 .map(|(guess, _score)| guess)
                 // only look at the top 15 guesses

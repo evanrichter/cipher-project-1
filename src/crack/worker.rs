@@ -53,6 +53,7 @@ impl CrackWorker {
         let mut gen = Generator::with_dict(&dict);
         let mut rng = Rng::with_seed(seed, seed);
 
+        let mut keylen_guesses = Vec::new();
         let mut crack_results = Vec::new();
         let mut spell_checked = Vec::new();
 
@@ -77,7 +78,7 @@ impl CrackWorker {
             let cipherbytes = str_to_bytes(&ciphertext);
 
             // KEYLENGTH GUESSING
-            let keylen_guesses = guesses(&cipherbytes);
+            guesses(&cipherbytes, &mut keylen_guesses);
 
             // CRACKING SLICES
             for (keylen, _) in keylen_guesses.iter().take(30) {

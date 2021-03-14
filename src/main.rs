@@ -26,7 +26,7 @@ fn main() -> anyhow::Result<()> {
 
     // thread for generating RandomSchedulers
     std::thread::spawn(move || {
-        let mut rng = Rng::with_seed(37, 13);
+        let mut rng = Rng::with_seed(0x414141, 0xdeadbeef);
 
         loop {
             let sched = RandomScheduler::from_rng(&mut rng);
@@ -44,6 +44,7 @@ fn main() -> anyhow::Result<()> {
     ctrlc::set_handler(move || r.store(false, Ordering::SeqCst))?;
 
     let mut stats: Vec<(usize, f64)> = vec![(0, 0.0); 9];
+    let mut zero_success: usize = 0;
 
     // (main) thread for printing results
     while running.load(Ordering::SeqCst) {
@@ -78,6 +79,9 @@ fn main() -> anyhow::Result<()> {
         // update the stats for base scheduler type
         stats[base_sched_ind].0 += 1;
         stats[base_sched_ind].1 += success;
+
+        // update count for zero success attempts
+        zero_success += 1;
 
         // print status line
         println!(
@@ -128,8 +132,8 @@ fn main() -> anyhow::Result<()> {
 
     // print overall # of tests, and overall average score
     println!(
-        "OVERALL: Attempted {} ciphertexts, on average {:>3}% successful",
-        stats[0].0, stats[0].1 as u8
+        "OVERALL: Attempted {} ciphertexts, on average {}% successful, {}% were complete fails",
+        stats[0].0, stats[0].1 as u8, (zero_success as f64 / stats[0].0 as f64) as u8,
     );
 
     Ok(())

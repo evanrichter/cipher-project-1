@@ -88,17 +88,24 @@ impl FromRng for RandomScheduler {
                 RandomBaseScheduler::from_rng(rng),
                 PeriodicRand::from_rng(rng),
             ),
-            2 => Self::Two(
-                RandomBaseScheduler::from_rng(rng),
-                PeriodicRand::from_rng(rng),
-                PeriodicRand::from_rng(rng),
-            ),
-            3 => Self::Three(
-                RandomBaseScheduler::from_rng(rng),
-                PeriodicRand::from_rng(rng),
-                PeriodicRand::from_rng(rng),
-                PeriodicRand::from_rng(rng),
-            ),
+            2 => {
+                // make period less frequent
+                let mut pr1 = PeriodicRand::from_rng(rng);
+                let mut pr2 = PeriodicRand::from_rng(rng);
+                pr1.period += 8;
+                pr2.period += 8;
+                Self::Two(RandomBaseScheduler::from_rng(rng), pr1, pr2)
+            }
+            3 => {
+                // make period less frequent
+                let mut pr1 = PeriodicRand::from_rng(rng);
+                let mut pr2 = PeriodicRand::from_rng(rng);
+                let mut pr3 = PeriodicRand::from_rng(rng);
+                pr1.period += 16;
+                pr2.period += 16;
+                pr3.period += 16;
+                Self::Three(RandomBaseScheduler::from_rng(rng), pr1, pr2, pr3)
+            }
             _ => unreachable!(),
         }
     }

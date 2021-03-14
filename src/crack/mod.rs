@@ -66,7 +66,8 @@ fn end_to_end() {
     // KEYLENGTH GUESSING
     //
 
-    let keylen_guesses = guesses(&cipherbytes);
+    let mut keylen_guesses = Vec::new();
+    guesses(&cipherbytes, &mut keylen_guesses);
 
     //
     // CRACKING SLICES
