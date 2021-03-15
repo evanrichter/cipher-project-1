@@ -57,7 +57,7 @@ impl Rng {
             .rotate_left(36)
             .wrapping_add(self.y.rotate_left(15))
             .wrapping_sub(xp);
-        return xp;
+        xp
     }
 
     /// Initialize the Rng with set values, or seeds. RomuDuo authors say that any non-zero value

@@ -33,7 +33,7 @@ fn main() -> anyhow::Result<()> {
 
             // repeat the same schedule 5 times
             for _ in 0..5 {
-                schedules.send(sched.clone()).unwrap();
+                schedules.send(sched).unwrap();
             }
         }
     });
@@ -95,7 +95,7 @@ fn main() -> anyhow::Result<()> {
 
     // calculate the averages
     for (n, total) in stats.iter_mut() {
-        *total = *total / *n as f64;
+        *total /= *n as f64;
     }
 
     // print stats for # of PeriodicRand inserted
@@ -133,7 +133,9 @@ fn main() -> anyhow::Result<()> {
     // print overall # of tests, and overall average score
     println!(
         "OVERALL: Attempted {} ciphertexts, on average {}% successful, {}% were complete fails",
-        stats[0].0, stats[0].1 as u8, (zero_success as f64 / stats[0].0 as f64) as u8,
+        stats[0].0,
+        stats[0].1 as u8,
+        (zero_success as f64 / stats[0].0 as f64) as u8,
     );
 
     Ok(())

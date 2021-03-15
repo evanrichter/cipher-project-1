@@ -112,12 +112,12 @@ impl FromRng for RandomScheduler {
 }
 
 impl KeySchedule for RandomScheduler {
-    fn schedule(&self, i: usize, k: usize, p: usize) -> usize {
+    fn schedule(&self, idx: usize, klen: usize, plen: usize) -> usize {
         match self {
-            Self::Zero(s) => s.schedule(i, k, p),
-            Self::One(s, a) => (a, s).schedule(i, k, p),
-            Self::Two(s, a, b) => (a, &(b, s)).schedule(i, k, p),
-            Self::Three(s, a, b, c) => (a, &(b, &(c, s))).schedule(i, k, p),
+            Self::Zero(s) => s.schedule(idx, klen, plen),
+            Self::One(s, a) => (a, s).schedule(idx, klen, plen),
+            Self::Two(s, a, b) => (a, &(b, s)).schedule(idx, klen, plen),
+            Self::Three(s, a, b, c) => (a, &(b, &(c, s))).schedule(idx, klen, plen),
         }
     }
 }

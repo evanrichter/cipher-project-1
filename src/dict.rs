@@ -38,7 +38,7 @@ impl<'a> Dictionary<'a> {
             .collect();
 
         // sort the words alphabetically
-        words.sort();
+        words.sort_unstable();
 
         // return the dictionary
         Self { words }
@@ -50,7 +50,7 @@ pub struct BytesDictionary {
 }
 
 impl BytesDictionary {
-    pub fn from_dict<'a>(dict: &Dictionary<'a>) -> Self {
+    pub fn from_dict(dict: &Dictionary) -> Self {
         use crate::utils::CharToNum;
 
         let words = dict

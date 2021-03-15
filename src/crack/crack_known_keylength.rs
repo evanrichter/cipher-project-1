@@ -45,7 +45,7 @@ impl Frequencies {
         // divide each letter count by the total to get a fraction
         let total: f32 = values.iter().sum();
         for v in values.iter_mut() {
-            *v = *v / total;
+            *v /= total;
         }
 
         // return Frequencies
@@ -68,7 +68,7 @@ impl Frequencies {
 
         // divide by total number of bytes
         for v in values.iter_mut() {
-            *v = *v / (bytes.len() as f32);
+            *v /= bytes.len() as f32;
         }
 
         // return Frequencies
@@ -88,13 +88,13 @@ impl Frequencies {
             .map(|(baseline, other)| (other - baseline).abs()) // TODO: this is not the way
             .sum();
 
-        return sum_of_differences;
+        sum_of_differences
     }
 }
 
 /// Return the best (smallest confidence value) CrackResult from a list of many
 pub fn best_crack(crackresults: &[CrackResult]) -> CrackResult {
-    assert!(crackresults.len() > 0);
+    assert!(!crackresults.is_empty());
     crackresults
         .iter()
         .min_by(|a, b| a.confidence.partial_cmp(&b.confidence).unwrap()) // have to unwrap because floats can be NaN (but should not happen to us)
@@ -124,14 +124,11 @@ pub fn unslice(pt_blocks: Vec<Vec<u8>>, keylength: usize) -> Vec<u8> {
     let mut unsliced = Vec::with_capacity(pt_blocks[0].len() * keylength);
 
     // the first block will be the longest, so we iterate over indexes of that
-    for i in 0..pt_blocks[0].iter().count() {
+    for i in 0..pt_blocks[0].len() {
         // for every index, go through each block and pull out the character there.
         // if there is no character there, just continue
         for block in pt_blocks.iter() {
-            // this here is awkward because we can't simply do block.get(i) on a str (because of
-            // unicode) this will be better after changing to only handling u8 instead of char and
-            // str when cracking
-            if let Some(c) = block.iter().nth(i) {
+            if let Some(c) = block.get(i) {
                 unsliced.push(*c);
             }
         }

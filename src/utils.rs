@@ -1,24 +1,24 @@
 //! Module for utilities used throughout the cracking tool.
 
 /// The alphabet in the message space
-pub const ALPHABET: &'static str = "abcdefghijklmnopqrstuvwxyz ";
+pub const ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz ";
 
 /// Extension trait for `char` to be converted to a `i8` according to the encoding scheme
 /// 0 => 'a', 1 => 'b', 2 => 'c', ..., 25 => 'z', 26 => ' '. Only the lowercase characters 'a'
 /// through 'z' and space ' ' are supported.  converted.
 pub trait CharToNum {
-    fn to_num(self) -> u8;
+    fn to_num(&self) -> u8;
 }
 
 impl CharToNum for char {
-    fn to_num(self) -> u8 {
+    fn to_num(&self) -> u8 {
         // Assert that the character is within our defined set ('a-z<space>') for debug builds.
         // This is not asserted when built with `cargo build --release`.
-        debug_assert!(self == ' ' || self >= 'a' && self <= 'z');
+        debug_assert!(self == &' ' || ('a'..='z').contains(&self));
 
-        match self {
+        match *self {
             ' ' => 26,
-            c => c as u8 - 'a' as u8,
+            c => c as u8 - b'a',
         }
     }
 }
@@ -27,11 +27,11 @@ impl CharToNum for char {
 /// 0 => 'a', 1 => 'b', 2 => 'c', ..., 25 => 'z', 26 => ' '. All other numbers are invalid to be
 /// converted.
 pub trait NumToChar {
-    fn to_char(self) -> char;
+    fn to_char(&self) -> char;
 }
 
 impl NumToChar for u8 {
-    fn to_char(self) -> char {
+    fn to_char(&self) -> char {
         const ALPHALEN: u8 = ALPHABET.len() as u8;
 
         // reduce self to positive integer within ALPHALEN
@@ -39,7 +39,7 @@ impl NumToChar for u8 {
 
         match num {
             26 => ' ',
-            n => ('a' as u8 + n) as char,
+            n => (b'a' + n) as char,
         }
     }
 }

@@ -15,13 +15,13 @@ pub struct CrackWorker {
     results: Sender<(RandomScheduler, usize, f32)>,
 }
 
-pub fn spawn_workers(
-    num_workers: usize,
-) -> (
+pub type WorkerComms = (
     Sender<RandomScheduler>,
     Receiver<(RandomScheduler, usize, f32)>,
     Vec<std::thread::JoinHandle<()>>,
-) {
+);
+
+pub fn spawn_workers(num_workers: usize) -> WorkerComms {
     let (sched_in, sched_out) = bounded(128);
     let (results_in, results_out) = unbounded();
     let mut rng = Rng::default();

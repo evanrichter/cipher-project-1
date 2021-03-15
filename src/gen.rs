@@ -34,7 +34,7 @@ impl<'d> Generator<'d> {
     /// be a good option for optimizations to reduce allocation.
     pub fn generate_words_into(&mut self, num_words: usize, dest: &mut String) {
         // prepend a space if we are appending to an already existing sentence
-        if dest.len() > 0 && !dest.ends_with(" ") {
+        if !dest.is_empty() && !dest.ends_with(' ') {
             dest.push(' ');
         }
 
@@ -42,8 +42,8 @@ impl<'d> Generator<'d> {
             // choose a word at random
             let word = *self.rng.choose(&self.dictionary.words);
 
-            // append the &str's characters to the String
-            dest.extend(word.chars());
+            // append the &str to the String
+            dest.push_str(word);
 
             // append a space
             dest.push(' ');

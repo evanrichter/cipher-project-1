@@ -3,12 +3,12 @@
 //! This module holds all code needed for cracking ciphertexts specifically encrypted using the
 //! project encryption model: [`Encryptor`][`crate::ciphers::Encryptor`]
 
-mod crack;
+mod crack_known_keylength;
 mod keylength;
 mod spellcheck;
 pub mod worker;
 
-pub use crack::{best_crack, crack, Frequencies};
+pub use crack_known_keylength::{best_crack, crack, Frequencies};
 pub use keylength::guesses;
 pub use spellcheck::spellcheck;
 
@@ -75,14 +75,14 @@ fn end_to_end() {
 
     let mut crack_results = Vec::new();
 
-    let baseline_freqs = crack::Frequencies::from_dict(&dict);
+    let baseline_freqs = Frequencies::from_dict(&dict);
 
     for (keylen, _) in keylen_guesses {
         let res = crack(&cipherbytes, keylen, &baseline_freqs);
         crack_results.push(res);
     }
 
-    let best = crack::best_crack(&crack_results);
+    let best = best_crack(&crack_results);
     println!(
         "best crack result from known keylength:\n{}\n",
         bytes_to_str(&best.plaintext)
@@ -99,7 +99,7 @@ fn end_to_end() {
         spell_checked.push(spellcheck(&crack, &bytesdict));
     }
 
-    let best = crack::best_crack(&spell_checked);
+    let best = best_crack(&spell_checked);
 
     println!(
         "best crack result after spell check:\n{}\n",
