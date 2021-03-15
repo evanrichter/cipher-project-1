@@ -9,8 +9,10 @@
 #[derive(Debug, Clone, Copy)]
 pub struct RepeatingKey;
 
-impl super::KeySchedule for RepeatingKey {
-    fn schedule(&self, index: usize, key_length: usize, _: usize) -> usize {
-        index % key_length
+use super::{KeySchedule, NextKey};
+
+impl KeySchedule for RepeatingKey {
+    fn schedule(&self, index: usize, key_length: usize, _: usize) -> NextKey {
+        NextKey::KeyIndex(index % key_length)
     }
 }
