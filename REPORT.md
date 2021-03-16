@@ -35,13 +35,12 @@ the guessed length of the key.
 ## Explanation of Approach
 Our approach works in three basic steps: guessing the key length, cracking the
 cipher based on the guessed key length, and spellchecking the guesses to more
-closely match known plaintexts. In the first step of our approach, the key
-length is guess given the ciphertext by dividing the ciphertext into chunks and
-calculating the hamming distance between chunks by computing the number of
-different bits. Using the hamming distance. After computing the hamming
+closely match known plaintexts. In our first step, the key
+length is guessed from ciphertext by dividing the ciphertext into equal length chunks and
+calculating the hamming distance between chunks. The hamming distance is calculated by counting the differences between the bits in each chunk. Using the hamming
 distance, we are able to generate a guess at the effective key length (length of
-the key after a scheduler is ran on it) by calculating the edit distance between
-the first keysize worth of bytes.
+the key after a scheduler is ran on it) by calculating the hamming distance between
+the first keysize worth of bytes. Whichever chunk length minimizes this score is likely the key length as a randomly selected byte, on average, will have a higher score than an english letter byte as english letters exsist between the values 97 to 122 while a random byte exsists on the whole range of possible byte values, 0-256. If a selected chunk size matches the key length, then the bytes it operates on will correspond to english letter values and therefore will yeild a low score. This is the value we then use to guide the subsequent steps. 
 
 Once a guess for the keylength is generated, we are able to attempt to crack the
 ciphertext by first dividing the ciphertext into  `keylength` slices by taking
@@ -49,29 +48,29 @@ every `i`th bit of the keylength and creating a slice with the corrosponding
 ciphertext bit. Once the ciphertext is divided into slices, we are able to crack
 each slice individually as if it was a single-byte key and calculate the
 character frequency of the slice. This character frequency can then be compared
-to the histogram generated for the given plaintext dictionary and the closest
-match for the slice can be returned. Once every slice is cracked, the slices can
+to a character frequency histogram generated on the given plaintext dictionary. The closest match beteen a size and a dictionary value will be returned in the output plaintext. Once every slice is cracked, the slices can
 be unsliced into a plaintext using the best character frequency match for each
-slice. The resulting plaintext should partially resemble plaintext words from
-the original dictionary.
+slice. The resulting plaintext should resemble plaintext words from
+the original dictionary, wlbeit with some errors.
 
-The third step of our approach is to spell-check the guessed plaintext in order
-to make it more closely resemble an actual plaintext. This is done by dividing
+The third step of our approach is to spell-check the guessed plaintext. This is done by dividing
 the guessed plaintext up into slices of possible words. For each slice, the
-levenshtein distance is calculated for each possible plaintext word. The best
-match is returned. At the conclusion of this step, the best possible guess for
+levenshtein distance, which measure the total number of steps needed to compute one bytesteam into anthoer, is calculated for each  plaintext word. THe matching value is returned and replaces the value in the origional guessed plaintext, presumably correcting any spelling errors. At the conclusion of this step, the best possible guess for
 the correct plaintext based on the most closely matching levenshtein distance of
-dictionary words is returned to give the final plaintext guess.  This entire
-process can be done for the best guess in each instance, or could be ran over
-and over to calculate multiple guesses in order to provide more opportunties to
-find the correct ciphertext; however, we found in our testing that the top
-guesses are generally very closely matched to the original plaintext before
+dictionary words is returned to give the final plaintext guess.  
+
+This 
+process can be repeated to calculate multiple guesses in order to provide more opportunties to
+find the correct ciphertext; however, we found while testing that the top
+guesses closely matched the original plaintext before
 encryption. 
 
 ## Description of Approach
-The first step in our approach is to guess the potential key lengths given the
+
+*Derving Potential Key Lengths*
+The first step in our approach is to derive potential key lengths from the
 ciphertext.  This is done by dividing the ciphertext into chunks and calculating
-the hamming distance between the chunks:
+the hamming distance between neighboring chunks:
 
 ```
 chunks: Vec<chunks> = ciphertext.divided_into_chunks(chunk size);
@@ -83,13 +82,16 @@ for chunk1 in chunks:
 ```
 
 This process is repeated for all possible key sizes between 3 and 120. The
-hamming distance result as well as the keysize guess are pushed to a dictionary
-to compare later. Once this dictionary is completed, the keysize guesses are
-ranked by normalizing the results and sorting the lowest scored results first.
+hamming distance result as well as the keysize guess are pushed to a vector
+to compare later. Once this process is completed for all possible sizes, the keysize guesses are
+ranked by normalizing the hamming distances by dividing the hamming distance by the length of the smaller bit length text. We then sort results from shortest to biggest to find the lowest score. 
 
-Once these results are scored, the top result is tried as the effective key
-length. Using this length, the cracking algorithm is run. For a given ciphertext
-and a key length, the ciphertext is divided into slices:
+
+Once these results are scored, the top result (that is, the lowest score value) is assumed to be the effective key
+length. 
+
+*Cracking the cyphertext through letter frequency analysis*
+Using this assumed keylength, our cracking algorithm is run. For a given ciphertext-keylength pair, the ciphertext is divided into keylength sized slices:
 
 ```
 for ct_index, ct_char in ciphertext:
@@ -97,8 +99,7 @@ for ct_index, ct_char in ciphertext:
   ct_blocks[bucket].push(ct_char)
 ```
 
-After slicing the blocks, we attempt to crack each block as a monoalphabetic
-shift cipher:
+After slicing the blocks, we treat each block as a monoalphabetic substitution cypher and crack it using letter frequency analysis:
 
 ```
 for letter in alphabet:
@@ -111,7 +112,7 @@ for letter in alphabet:
   return vector of best confidence plaintexts for each block.
 ```
 
-This vector result is then unsliced back into a normal plaintext string:
+The slices are then assembled to form  plaintext string:
 
 ```
 for i in range(0, pt_blocks):
@@ -120,7 +121,7 @@ for i in range(0, pt_blocks):
   return the unsliced plaintext
 ```
 
-The total cracking function returns the plaintext with the best scoring
+The  cracking function returns the plaintext with the best scoring
 confidence.
 
 Finally, the plaintext is spellchecked against the plaintext dictionary to
