@@ -49,14 +49,14 @@ matched to the original plaintext before encryption.
 The first step in our approach is to guess the potential key lengths given the ciphertext. 
 This is done by dividing the ciphertext into chunks and calculating the hamming distance
 between the chunks:
-'''
+```
 chunks: Vec<chunks> = ciphertext.divided_into_chunks(chunk size);
 let chunk1 = the first chunk
 let chunk2 = the second chunk
 for chunk1 in chunks:
   for chunk2 in chunks:
     distance += sum(chunk1 ^ chunk2)
-'''
+```
 This process is repeated for all possible key sizes between 3 and 120. The hamming distance 
 result as well as the keysize guess are pushed to a dictionary to compare later. Once this 
 dictionary is completed, the keysize guesses are ranked by normalizing the results and sorting 
@@ -65,12 +65,13 @@ the lowest scored results first.
 Once these results are scored, the top result is tried as the effective key length. Using this 
 length, the cracking algorithm is run. For a given ciphertext and a key length, the ciphertext 
 is divided into slices:
-'''
+```
 for ct_index, ct_char in ciphertext:
   let bucket = ct_index % keylength
   ct_blocks[bucket].push(ct_char)
-'''
+```
 After slicing the blocks, we attempt to crack each block as a single bit key:
+```
 for letter in alphabet:
   for block in ct_blocks:
     plaintext = shift block by current letter
@@ -79,20 +80,20 @@ for letter in alphabet:
     CrackResult = {plaintext, confidence)
     return best confidence plaintext for block
   return vector of best confidence plaintexts for each block.
-'''
+```
 This vector result is then unsliced back into a normal plaintext string:
-'''
+```
 for i in range(0, pt_blocks):
   for block in pt_blocks:
     pull out next character in the block
   return the unsliced plaintext
-'''
+```
 The total cracking function returns the best confidenced plaintext.
 
 Finally, the plaintext is spellchecked against the plaintext dictionary to remove 
 words that remain jumbled in order to more accurately present them as actual plaintext.
 To accomplish this, we use an implimentation of the levenshtein edit distance:
-'''
+```
 slice plaintext guess into probable words
 for slice in plaintext_slices:
   for word in dictionary:
@@ -101,5 +102,5 @@ for slice in plaintext_slices:
   best_word = min_distance(words)
 full_plaintext_guess = push(best_word)
 return full_plaintext_guess
-'''
+```
 The resulting plaintext is the final guess of the original plaintext.
