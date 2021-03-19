@@ -1,3 +1,5 @@
+use std::io::BufRead;
+
 use crate::ciphers::schedulers::RandomScheduler;
 use crate::ciphers::{Cipher, Encryptor};
 use crate::crack::{best_crack, crack, guesses, spellcheck, Frequencies};
@@ -47,8 +49,24 @@ impl CrackWorker {
         // SETUP
         let mut words = std::fs::read_to_string("words/default.txt").unwrap();
         let dict = Dictionary::from_string(&mut words);
-        let bytes_dict = BytesDictionary::from_dict(&dict);
+        let mut bytes_dict = BytesDictionary::from_dict(&dict);
         let baseline_freqs = Frequencies::from_dict(&dict);
+
+
+        // Test 1 Dict construction
+        let test1_filename = "words/test1_plaintext.txt";
+        let test1_file = File::open(test1_filename).unwrap();
+        let test1_reader = BufRead::new(test1_file);
+        let mut test1_known_plaintexts = Vec::new();
+        // convert each possible PT to bytes and store in a vec
+        for (index, line) in test1_reader.lines().enumerate() {
+            let test1_dict = Dictionary::from_string(&mut line);
+            let test1_bytes_dict = BytesDictionary::from_dict(&test1_dict);
+            test1_known_plaintexts.push(test1_bytes_dict);          
+        }
+
+        let test1_dict = Dictionary::from_string(&mut test1_words);
+        let test1_bytes_dict = BytesDictionary::from_dict(&test1_dict);
 
         let mut gen = Generator::with_dict(&dict);
         let mut rng = Rng::with_seed(seed, seed);
@@ -85,6 +103,26 @@ impl CrackWorker {
                 let res = crack(&cipherbytes, *keylen, &baseline_freqs);
                 crack_results.push(res);
             }
+
+            // BEFORE SPELL CHECKING, CHECK IF TEST 1
+            for known_plaintext in test1_known_plaintexts {
+                for crack in &crack_results{
+                    let success =
+                        strsim::levenshtein(&bytes_to_str(crack), &known_plaintext)
+                            as f32
+                            / plaintext.len() as f32;
+                    // get success as a percentage
+                    let percent_success = (1.0 - (success as f64).min(1.0)) * 100.0;
+                    if percent_success >= 40 {
+                        // test is successful
+                        bytes_dict = known_plaintext; // I don't know if this is dangerous to do
+                    } else {
+                        continue;
+                    }
+                }    
+            }
+            
+
 
             // SPELL CHECKING
             for crack in &crack_results {
