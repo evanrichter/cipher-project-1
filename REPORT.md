@@ -33,14 +33,17 @@ Kasiski Examination where the ciphertext is broken into `n` slices where `n` is
 the guessed length of the key.
 
 ## Explanation of Approach
-Our approach works in three basic steps: guessing the key length, cracking the
-cipher based on the guessed key length, and spellchecking the guesses to more
-closely match known plaintexts. In our first step, the key
-length is guessed from ciphertext by dividing the ciphertext into equal length chunks and
-calculating the hamming distance between chunks. The hamming distance is calculated by counting the differences between the bits in each chunk. Using the hamming
-distance, we are able to generate a guess at the effective key length (length of
-the key after a scheduler is ran on it) by calculating the hamming distance between
-the first keysize worth of bytes. Whichever chunk length minimizes this score is likely the key length as a randomly selected byte, on average, will have a higher score than an english letter byte as english letters exsist between the values 97 to 122 while a random byte exsists on the whole range of possible byte values, 0-256. If a selected chunk size matches the key length, then the bytes it operates on will correspond to english letter values and therefore will yeild a low score. This is the value we then use to guide the subsequent steps. 
+
+Our approach follows three basic steps: guessing the key length, forming an estimated decryption of the cypher based on the key length, and spellchecking that estimate to ensure its contents match the words in the given dictionary. 
+
+In our first step, the key
+length is guessed by dividing the ciphertext into equal length chunks and
+calculating the hamming distance between chunks. The hamming distance is calculated by counting the differences between the bits in each chunk. Using this hamming
+distance, we are able to generate an effective key length (length of
+the key after a scheduler is ran on it) by chunking the characters of the cypher text into various test sizes (possible key lengths). We then  calculate the hamming distance between
+each chunk. Whichever chunk length (that is, possible key length) minimizes this score is likely the key length. This is because a randomly selected byte, on average, will have a higher score than an english letter byte as english letters exsist between the values 97 to 122 while a random byte exsists on the whole range of possible byte values, 0-256. If a test chunk size matches thev real key length, then the bytes it operates on will correspond to english letter values and therefore will yeild a low score. 
+
+Once the lowest scoring value is found, we presume it to be the correct key size and use it to guide subsequent steps. 
 
 Once a guess for the keylength is generated, we are able to attempt to crack the
 ciphertext by first dividing the ciphertext into  `keylength` slices by taking
@@ -68,6 +71,7 @@ encryption.
 ## Description of Approach
 
 *Derving Potential Key Lengths*
+
 The first step in our approach is to derive potential key lengths from the
 ciphertext.  This is done by dividing the ciphertext into chunks and calculating
 the hamming distance between neighboring chunks:
@@ -81,7 +85,7 @@ for chunk1 in chunks:
     distance += sum(chunk1 ^ chunk2)
 ```
 
-This process is repeated for all possible key sizes between 3 and 120. The
+This process is repeated for all possible key sizes between 3 and 120, values chosen as a practical guess. The
 hamming distance result as well as the keysize guess are pushed to a vector
 to compare later. Once this process is completed for all possible sizes, the keysize guesses are
 ranked by normalizing the hamming distances by dividing the hamming distance by the length of the smaller bit length text. We then sort results from shortest to biggest to find the lowest score. 
@@ -91,6 +95,7 @@ Once these results are scored, the top result (that is, the lowest score value) 
 length. 
 
 *Cracking the cyphertext through letter frequency analysis*
+
 Using this assumed keylength, our cracking algorithm is run. For a given ciphertext-keylength pair, the ciphertext is divided into keylength sized slices:
 
 ```
@@ -112,7 +117,7 @@ for letter in alphabet:
   return vector of best confidence plaintexts for each block.
 ```
 
-The slices are then assembled to form  plaintext string:
+The slices are then assembled to form a single plaintext string:
 
 ```
 for i in range(0, pt_blocks):
@@ -121,8 +126,10 @@ for i in range(0, pt_blocks):
   return the unsliced plaintext
 ```
 
-The  cracking function returns the plaintext with the best scoring
+This process is repeated several times to form several guesses. The  cracking function returns the plaintext with the best scoring
 confidence.
+
+*Spellchecking the guess to correct errors*
 
 Finally, the plaintext is spellchecked against the plaintext dictionary to
 remove words that remain jumbled in order to more accurately present them as
@@ -140,4 +147,4 @@ full_plaintext_guess = push(best_word)
 return full_plaintext_guess
 ```
 
-The resulting plaintext is the final guess of the original plaintext.
+The resulting plaintext is our final guess of the original plaintext which we output to the user.
