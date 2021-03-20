@@ -32,7 +32,7 @@ impl KeySchedule for OffsetReverse {
 }
 
 impl crate::rng::FromRng for OffsetReverse {
-    fn from_rng(rng: &mut crate::Rng) -> Self {
+    fn from_rng(rng: &mut crate::rng::Rng) -> Self {
         Self {
             offset: rng.next() as usize % 17,
         }

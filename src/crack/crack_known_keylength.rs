@@ -16,6 +16,7 @@ use crate::{
 };
 
 /// Frequency distribution
+#[derive(Clone)]
 pub struct Frequencies {
     /// values[0]  => frequency of 'a'
     /// values[1]  => frequency of 'b'
