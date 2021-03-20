@@ -2,21 +2,7 @@
 
 ## Introduction
 
-This project was completed by Evan Richter, Matthew Mittelsteadt, and Alex Preneta. 
-
-Tasks completed were as follows:
- * Create example schedulers (All)
-   * Created several example schedulers to be able to test with different variations of key scheduling algorithms
- * Key Length Guesser (Evan)
-   * Given a ciphertext, generate guesses at possible key lengths to be used in cracking the cipher                                                                 
- * Cracking cipher with key length guesses (Alex/Evan)
-   * Given a key length and ciphertext, crack the ciphertext and output the best possible guess based on character frequency comparisons to the known dictionary
- * Spell check the possible plaintexts (Matt)
-   * Given a guessed plaintext and a dictionary, spellcheck the guessed plaintext to most closely match actual words in the dictionary.                             
- * Test algorithm (All)
-   * Use the scheduling algorithms to create tests for our code and look for opportunities to improve in order to yield better results.                             
- * Write Report (All)
-   * Write the report to outline techniques used and our approach                                                                                                           
+This project was completed by Evan Richter, Matthew Mittelsteadt, and Alex Preneta.                                                                                                        
 
 | Task                                        | Description                                                                                                                                                             | Group Member |
 |---------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
