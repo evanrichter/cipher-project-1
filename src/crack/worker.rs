@@ -1,5 +1,3 @@
-use std::io::BufRead;
-
 use crate::ciphers::schedulers::RandomScheduler;
 use crate::ciphers::{Cipher, Encryptor};
 use crate::crack::{best_crack, crack, guesses, spellcheck, Frequencies};
@@ -47,26 +45,21 @@ pub fn spawn_workers(num_workers: usize) -> WorkerComms {
 impl CrackWorker {
     pub fn crack_loop(&self, seed: u64) {
         // SETUP
-        let mut words = std::fs::read_to_string("words/default.txt").unwrap();
+        let mut words = include_str!("../../words/default.txt").to_string();
         let dict = Dictionary::from_string(&mut words);
-        let mut bytes_dict = BytesDictionary::from_dict(&dict);
+        let bytes_dict = BytesDictionary::from_dict(&dict);
         let baseline_freqs = Frequencies::from_dict(&dict);
 
-
-        // Test 1 Dict construction
-        let test1_filename = "words/test1_plaintext.txt";
-        let test1_file = File::open(test1_filename).unwrap();
-        let test1_reader = BufRead::new(test1_file);
-        let mut test1_known_plaintexts = Vec::new();
-        // convert each possible PT to bytes and store in a vec
-        for (index, line) in test1_reader.lines().enumerate() {
-            let test1_dict = Dictionary::from_string(&mut line);
-            let test1_bytes_dict = BytesDictionary::from_dict(&test1_dict);
-            test1_known_plaintexts.push(test1_bytes_dict);          
-        }
-
-        let test1_dict = Dictionary::from_string(&mut test1_words);
-        let test1_bytes_dict = BytesDictionary::from_dict(&test1_dict);
+        // Get strings for Test 1
+        let test1_str = include_str!("../../words/test1_plaintext.txt");
+        let test1_known_plaintexts: Vec<(String, Frequencies)> = test1_str
+            .lines()
+            .map(|s| {
+                let string = s.to_string();
+                let freqs = Frequencies::from_str(s);
+                (string, freqs)
+            })
+            .collect();
 
         let mut gen = Generator::with_dict(&dict);
         let mut rng = Rng::with_seed(seed, seed);
@@ -75,7 +68,7 @@ impl CrackWorker {
         let mut crack_results = Vec::new();
         let mut spell_checked = Vec::new();
 
-        loop {
+        'cracking: loop {
             // clear these vectors
             crack_results.clear();
             spell_checked.clear();
@@ -90,8 +83,16 @@ impl CrackWorker {
             // compile the encryptor
             let encryptor = Encryptor::new(key, sched, Rng::from_rng(&mut rng));
 
-            // generate plaintext and ciphertext
-            let plaintext = gen.generate_words(200);
+            // generate plaintext
+            let (plaintext, freqs) = if *rng.choose(&[true, true]) {
+                // test 1
+                rng.choose(&test1_known_plaintexts).clone()
+            } else {
+                // test 2
+                (gen.generate_words(200).to_string(), baseline_freqs.clone())
+            };
+
+            // generate ciphertext
             let ciphertext = encryptor.encrypt(&plaintext);
             let cipherbytes = str_to_bytes(&ciphertext);
 
@@ -99,30 +100,57 @@ impl CrackWorker {
             guesses(&cipherbytes, &mut keylen_guesses);
 
             // CRACKING SLICES
-            for (keylen, _) in keylen_guesses.iter().take(30) {
-                let res = crack(&cipherbytes, *keylen, &baseline_freqs);
+            for (keylen, _) in keylen_guesses.iter() {
+                let res = crack(&cipherbytes, *keylen, &freqs); // TODO: we need to guess the actual frequency table not know it from dirty knowledge
                 crack_results.push(res);
             }
 
             // BEFORE SPELL CHECKING, CHECK IF TEST 1
-            for known_plaintext in test1_known_plaintexts {
-                for crack in &crack_results{
-                    let success =
-                        strsim::levenshtein(&bytes_to_str(crack), &known_plaintext)
-                            as f32
-                            / plaintext.len() as f32;
-                    // get success as a percentage
-                    let percent_success = (1.0 - (success as f64).min(1.0)) * 100.0;
-                    if percent_success >= 40 {
-                        // test is successful
-                        bytes_dict = known_plaintext; // I don't know if this is dangerous to do
-                    } else {
-                        continue;
-                    }
-                }    
-            }
-            
+            let mut best_test1_score = f32::MAX;
+            let mut best_test1_guess = "";
 
+            for (known_pt, _) in test1_known_plaintexts.iter() {
+                let mut best_score = f32::MAX;
+
+                for crack in &crack_results {
+                    let crackstr = bytes_to_str(&crack.plaintext);
+                    let score =
+                        strsim::levenshtein(&crackstr, &known_pt) as f32 / plaintext.len() as f32;
+
+                    // update the best score for this plaintext
+                    if score < best_score {
+                        best_score = score;
+                    }
+                }
+
+                if best_score < best_test1_score {
+                    best_test1_score = best_score;
+                    best_test1_guess = known_pt;
+                }
+            }
+
+            if best_test1_guess != &plaintext {
+                println!("guess: {}", best_test1_guess);
+                println!("plaintext: {}", &plaintext);
+            }
+            assert_eq!(
+                best_test1_guess, &plaintext,
+                "didn't pick the right plaintext"
+            );
+
+            // test is successful, send back results
+            self.results
+                .send((encryptor.keyschedule, keylen, best_test1_score))
+                .unwrap();
+
+            // continue main cracking loop TODO: fix
+            continue 'cracking;
+
+            println!(
+                "{:?} {} {}",
+                encryptor.keyschedule, keylen, best_test1_score
+            );
+            panic!("we're only testing test 1, so if we get here we failed");
 
             // SPELL CHECKING
             for crack in &crack_results {

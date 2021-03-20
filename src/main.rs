@@ -1,3 +1,5 @@
+#![allow(unreachable_code)]
+
 // these "mod" statements bring in ciphers/mod.rs, dict.rs, gen.rs, and utils.rs files
 mod ciphers;
 mod crack;
@@ -22,7 +24,7 @@ use std::sync::Arc;
 fn main() -> anyhow::Result<()> {
     // threads for cracking
     let cpus = num_cpus::get();
-    let (schedules, results, _) = crack::worker::spawn_workers(cpus - 2);
+    let (schedules, results, _) = crack::worker::spawn_workers(cpus - 1);
 
     // thread for generating RandomSchedulers
     std::thread::spawn(move || {
