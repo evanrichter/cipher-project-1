@@ -16,6 +16,7 @@ fn main() -> anyhow::Result<()> {
     let stdin = std::io::stdin();
     let mut ciphertext = String::new();
     stdin.read_line(&mut ciphertext)?;
+    ciphertext = ciphertext.trim().to_string();
 
     // 2. crack ciphertext with crack_single_ciphertext()
     let plaintext = crack_single_ciphertext(&ciphertext);
