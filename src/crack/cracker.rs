@@ -6,7 +6,7 @@ use crate::utils::*;
 
 pub fn crack_single_ciphertext(ciphertext: &str) -> String {
     // SETUP
-    let mut words = include_str!("../../words/default.txt").to_string(); // TODO: verify this is correct
+    let mut words = include_str!("../../words/default.txt").to_string();
     let dict = Dictionary::from_string(&mut words);
     let bytes_dict = BytesDictionary::from_dict(&dict);
     let baseline_freqs = Frequencies::from_dict(&dict);
