@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::ciphers::schedulers::RandomScheduler;
 use crate::ciphers::{Cipher, Encryptor};
 use crate::crack::{best_crack, crack, guesses, spellcheck, Frequencies};

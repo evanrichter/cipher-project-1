@@ -56,7 +56,7 @@ pub enum RandomBaseScheduler {
 }
 
 impl FromRng for RandomBaseScheduler {
-    fn from_rng(rng: &mut crate::Rng) -> Self {
+    fn from_rng(rng: &mut crate::rng::Rng) -> Self {
         match rng.choose(&[1, 2, 3, 4]) {
             1 => Self::Aab(Aab::from_rng(rng)),
             2 => Self::LengthMod(LengthMod),
@@ -99,7 +99,7 @@ pub enum RandomScheduler {
 }
 
 impl FromRng for RandomScheduler {
-    fn from_rng(rng: &mut crate::Rng) -> Self {
+    fn from_rng(rng: &mut crate::rng::Rng) -> Self {
         match rng.choose(&[0, 0, 1, 1, 1, 2, 2, 2, 3]) {
             0 => Self::Zero(RandomBaseScheduler::from_rng(rng)),
             1 => Self::One(
