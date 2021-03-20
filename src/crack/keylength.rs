@@ -4,13 +4,13 @@
 /// multi-byte xor.
 #[allow(dead_code)]
 pub fn guesses(ciphertext: &[u8], keysizes: &mut Vec<(usize, f64)>) {
-    const KEYSIZE_LO: usize = 3;
-    const KEYSIZE_HI: usize = 120;
+    let keysize_lo: usize = 3;
+    let keysize_hi: usize = 120.min(ciphertext.len() / 4);
 
     // clear previous keysizes
     keysizes.clear();
 
-    for keysize in KEYSIZE_LO..KEYSIZE_HI {
+    for keysize in keysize_lo..keysize_hi {
         let score = hamming_distance_between_chunks(ciphertext, keysize);
         keysizes.push((keysize, score));
     }
