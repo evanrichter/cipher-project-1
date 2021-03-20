@@ -1,5 +1,3 @@
-#![allow(unreachable_code)]
-
 // these "mod" statements bring in ciphers/mod.rs, dict.rs, gen.rs, and utils.rs files
 mod ciphers;
 mod crack;

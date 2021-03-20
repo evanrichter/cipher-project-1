@@ -12,6 +12,9 @@ pub use crack_known_keylength::{best_crack, crack, Frequencies};
 pub use keylength::guesses;
 pub use spellcheck::spellcheck;
 
+mod cracker;
+pub use cracker::crack_single_ciphertext;
+
 /// Every cracking strategy produces some plaintext along with a confidence value. If we run two
 /// different strategies, both are successful (returning `Some(CrackResult)`), but the plaintexts
 /// don't match, we could try to guess the correct one based on the confidence value.
