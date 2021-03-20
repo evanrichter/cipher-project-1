@@ -4,11 +4,11 @@
 /// multi-byte xor.
 #[allow(dead_code)]
 pub fn guesses(ciphertext: &[u8], keysizes: &mut Vec<(usize, f64)>) {
-    // clear previous keysizes
-    keysizes.clear();
-
     const KEYSIZE_LO: usize = 3;
     const KEYSIZE_HI: usize = 120;
+
+    // clear previous keysizes
+    keysizes.clear();
 
     for keysize in KEYSIZE_LO..KEYSIZE_HI {
         let score = hamming_distance_between_chunks(ciphertext, keysize);
@@ -17,11 +17,11 @@ pub fn guesses(ciphertext: &[u8], keysizes: &mut Vec<(usize, f64)>) {
 
     // figure out y = mx + b
     let xy: Vec<_> = keysizes.iter().map(|(a, b)| (*a as f64, *b)).collect();
-    let (xtot, ytot) = xy
+    let (x_tot, y_tot) = xy
         .iter()
         .fold((0.0, 0.0), |(sa, sb), (a, b)| (sa + a, sb + b));
-    let (xmean, ymean) = (xtot / xy.len() as f64, ytot / xy.len() as f64);
-    let (m, b) = linreg::lin_reg(xy.into_iter(), xmean, ymean).unwrap();
+    let (x_mean, y_mean) = (x_tot / xy.len() as f64, y_tot / xy.len() as f64);
+    let (m, b) = linreg::lin_reg(xy.into_iter(), x_mean, y_mean).unwrap();
 
     // undo the y = mx + b and normalize to x again
     for (x, y) in keysizes.iter_mut() {

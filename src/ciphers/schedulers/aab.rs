@@ -1,4 +1,4 @@
-use super::KeySchedule;
+use super::{KeySchedule, NextKey};
 
 /// This scheduler repeats the first half of the key, then runs through the whole key. The hope is
 /// to confuse keylength guessing.
@@ -16,10 +16,15 @@ pub struct Aab {
 }
 
 impl KeySchedule for Aab {
-    fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
-        // adjust num_chars and offset by keylength
-        let num_chars = self.num_chars % key_length;
+    fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> NextKey {
+        // offset must fit within key
         let offset = self.offset % key_length;
+
+        // num_chars must be:
+        //  * at least 1
+        //  * up to key_length
+        //  * no greater than key_length - offset
+        let num_chars = 1.max(self.num_chars % key_length).min(key_length - offset);
 
         // effective key length is key_length + number of repeated chars
         let eff_key_length = key_length + num_chars * self.num_reps;
@@ -27,7 +32,7 @@ impl KeySchedule for Aab {
         // effective index
         let index = index % eff_key_length;
 
-        if index < offset {
+        let next = if index < offset {
             // before any repetition
             index
         } else if index < offset + (self.num_reps + 1) * num_chars {
@@ -36,7 +41,9 @@ impl KeySchedule for Aab {
         } else {
             // after repeated range
             index - num_chars * self.num_reps
-        }
+        };
+
+        NextKey::KeyIndex(next)
     }
 }
 
@@ -67,7 +74,7 @@ mod tests {
         let mut index = 0;
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = aab.schedule(index, key.len(), 1000);
+                let computed = aab.schedule(index, key.len(), 1000).index_or_panic();
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
             }
@@ -87,7 +94,7 @@ mod tests {
         let mut index = 0;
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = aab.schedule(index, key.len(), 1000);
+                let computed = aab.schedule(index, key.len(), 1000).index_or_panic();
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
             }
@@ -107,7 +114,7 @@ mod tests {
         let mut index = 0;
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = aab.schedule(index, key.len(), 1000);
+                let computed = aab.schedule(index, key.len(), 1000).index_or_panic();
                 assert_eq!(effective_key[expected], key[computed]);
                 index += 1;
             }

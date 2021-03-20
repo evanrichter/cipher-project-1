@@ -5,6 +5,8 @@ use crate::utils::{reduce_key, Key, NumToChar, Shift};
 use std::cell::Cell;
 use std::fmt::Debug;
 
+use super::schedulers::NextKey;
+
 /// The main encryption scheme described in the project description
 #[derive(Debug)]
 pub struct Encryptor<K: KeySchedule + Debug> {
@@ -70,13 +72,17 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
         // continue encryption as long as there is a plaintext character left to read
         'encryption: while plaintext.peek().is_some() {
             // get key index to use as shift.
-            let index = self.keyschedule.schedule(ciphertext.len(), keylen, ptlen);
+            let next_key = self.keyschedule.schedule(ciphertext.len(), keylen, ptlen);
 
             // get the shift amount from the key, or insert a random character. A random character
             // is only inserted when the index is out of bounds of the key.
-            let shift = match self.key.get(index) {
-                Some(s) => *s,
-                None => {
+            let shift = match next_key {
+                NextKey::KeyIndex(index) => *self.key.get(index).unwrap_or_else(|| {
+                    dbg!(&self.keyschedule);
+                    dbg!(&self.key);
+                    panic!();
+                }),
+                NextKey::Rand => {
                     // get a random number and wrap it to the correct range
                     let rand = rng.next() as u8;
                     // push the character to the ciphertext
@@ -107,13 +113,13 @@ impl<K: KeySchedule + Debug> Cipher for Encryptor<K> {
         // read every byte of ciphertext
         'decryption: for (index, cipher) in ciphertext.chars().enumerate() {
             // get key index to use as shift.
-            let index = self.keyschedule.schedule(index, keylen, ptlen);
+            let next_key = self.keyschedule.schedule(index, keylen, ptlen);
 
             // get the shift amount from the key, or discard the character if the character was
             // generated randomly.
-            let shift = match self.key.get(index) {
-                Some(s) => *s,
-                None => continue 'decryption,
+            let shift = match next_key {
+                NextKey::KeyIndex(index) => self.key[index],
+                NextKey::Rand => continue 'decryption,
             };
 
             // apply the shift amount in reverse because we are decrypting not encrypting.

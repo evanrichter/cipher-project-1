@@ -25,7 +25,25 @@ pub trait KeySchedule {
     ///   * `i` is the index being output to ciphertext
     ///   * `t` is the key length
     ///   * `L` is the length of the plaintext
-    fn schedule(&self, index: usize, key_length: usize, plaintext_length: usize) -> usize;
+    fn schedule(&self, index: usize, key_length: usize, plaintext_length: usize) -> NextKey;
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum NextKey {
+    KeyIndex(usize),
+    Rand,
+}
+
+#[cfg(test)]
+impl NextKey {
+    /// Gets the key index. Panics if the next key is actually NextKey::Rand. Used for testing only
+    /// at this point.
+    pub fn index_or_panic(&self) -> usize {
+        match self {
+            NextKey::KeyIndex(i) => *i,
+            NextKey::Rand => panic!("NextKey::Rand does not hold a valid key index"),
+        }
+    }
 }
 
 /// Base scheduler type that exists to randomly generate many kinds of schedulers
@@ -50,7 +68,7 @@ impl FromRng for RandomBaseScheduler {
 }
 
 impl KeySchedule for RandomBaseScheduler {
-    fn schedule(&self, i: usize, k: usize, p: usize) -> usize {
+    fn schedule(&self, i: usize, k: usize, p: usize) -> NextKey {
         match self {
             Self::Aab(s) => s.schedule(i, k, p),
             Self::LengthMod(s) => s.schedule(i, k, p),
@@ -112,12 +130,12 @@ impl FromRng for RandomScheduler {
 }
 
 impl KeySchedule for RandomScheduler {
-    fn schedule(&self, idx: usize, klen: usize, plen: usize) -> usize {
+    fn schedule(&self, idx: usize, k_len: usize, p_len: usize) -> NextKey {
         match self {
-            Self::Zero(s) => s.schedule(idx, klen, plen),
-            Self::One(s, a) => (a, s).schedule(idx, klen, plen),
-            Self::Two(s, a, b) => (a, &(b, s)).schedule(idx, klen, plen),
-            Self::Three(s, a, b, c) => (a, &(b, &(c, s))).schedule(idx, klen, plen),
+            Self::Zero(s) => s.schedule(idx, k_len, p_len),
+            Self::One(s, a) => (a, s).schedule(idx, k_len, p_len),
+            Self::Two(s, a, b) => (a, &(b, s)).schedule(idx, k_len, p_len),
+            Self::Three(s, a, b, c) => (a, &(b, &(c, s))).schedule(idx, k_len, p_len),
         }
     }
 }

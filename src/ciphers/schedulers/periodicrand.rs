@@ -1,5 +1,5 @@
-use super::KeySchedule;
 use super::RepeatingKey;
+use super::{KeySchedule, NextKey};
 
 /// This scheduler repeats the key, but overwrites with, or inserts, a random char on a repeating
 /// basis.
@@ -43,7 +43,7 @@ impl PeriodicRand {
 }
 
 impl KeySchedule for PeriodicRand {
-    fn schedule(&self, index: usize, key_length: usize, pt_length: usize) -> usize {
+    fn schedule(&self, index: usize, key_length: usize, pt_length: usize) -> NextKey {
         // assume the PeriodicRand is in front of a simple repeating key schedule by default
         let rk = &RepeatingKey;
 
@@ -61,13 +61,13 @@ impl KeySchedule for PeriodicRand {
 // sched.schedule(0, 12, 500);
 // ```
 impl<K: KeySchedule> KeySchedule for (&PeriodicRand, &K) {
-    fn schedule(&self, mut index: usize, key_length: usize, plaintext_length: usize) -> usize {
+    fn schedule(&self, mut index: usize, key_length: usize, plaintext_length: usize) -> NextKey {
         let prand = &self.0;
         let other = &self.1;
 
         // determine if we should insert/overwrite a random char now
         if prand.random_at(index) {
-            return usize::MAX;
+            return NextKey::Rand;
         }
 
         // fix overall index in case we aren't simply overwriting
@@ -106,24 +106,28 @@ mod tests {
             overwrite: false,
         };
 
-        const RAND: usize = usize::MAX;
+        use NextKey::*;
+
         #[rustfmt::skip]
-        let effective_key_indices = [0, RAND,
-                               1, 2, 3, RAND,
-                               4, 5, 6, RAND,
-                               0, 1, 2, RAND,
-                               3, 4, 5, RAND,
-                               6, 0, 1, RAND,
-                               2, 3, 4, RAND,
-                               5, 6];
+        let effective_key_indices = [KeyIndex(0), Rand,
+           KeyIndex(1), KeyIndex(2), KeyIndex(3), Rand,
+           KeyIndex(4), KeyIndex(5), KeyIndex(6), Rand,
+           KeyIndex(0), KeyIndex(1), KeyIndex(2), Rand,
+           KeyIndex(3), KeyIndex(4), KeyIndex(5), Rand,
+           KeyIndex(6), KeyIndex(0), KeyIndex(1), Rand,
+           KeyIndex(2), KeyIndex(3), KeyIndex(4), Rand,
+           KeyIndex(5), KeyIndex(6)];
 
         let mut index = 0;
         for _ in 0..500 {
             for expected in 0..effective_key_indices.len() {
                 let computed = sched.schedule(index, key.len(), 1000);
                 assert_eq!(effective_key_indices[expected], computed);
-                if computed != RAND {
-                    assert_eq!(key[effective_key_indices[expected]], key[computed]);
+                if let KeyIndex(computed) = computed {
+                    assert_eq!(
+                        key[effective_key_indices[expected].index_or_panic()],
+                        key[computed]
+                    );
                 }
                 index += 1;
             }
@@ -154,6 +158,7 @@ mod tests {
             num_reps: 2,
             offset: 1,
         };
+
         let rand = PeriodicRand {
             period: 7,
             start: 4,
@@ -166,10 +171,10 @@ mod tests {
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
                 let computed = sched.schedule(index, key.len(), 1000);
-                if computed == usize::MAX {
-                    assert_eq!(effective_key[expected], b'_');
+                if let NextKey::KeyIndex(index) = computed {
+                    assert_eq!(effective_key[expected], key[index]);
                 } else {
-                    assert_eq!(effective_key[expected], key[computed]);
+                    assert_eq!(effective_key[expected], b'_');
                 }
                 index += 1;
             }

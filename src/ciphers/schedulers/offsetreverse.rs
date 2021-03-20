@@ -7,10 +7,10 @@ pub struct OffsetReverse {
     offset: usize,
 }
 
-use super::KeySchedule;
+use super::{KeySchedule, NextKey};
 
 impl KeySchedule for OffsetReverse {
-    fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> usize {
+    fn schedule(&self, index: usize, key_length: usize, _plaintext_length: usize) -> NextKey {
         // fix the offset if it's larger than the key
         let offset = self.offset % (key_length + 1);
 
@@ -19,13 +19,15 @@ impl KeySchedule for OffsetReverse {
         let eff_index = index % eff_key_length;
 
         //Before the offset
-        if eff_index < offset {
+        let next = if eff_index < offset {
             //calculate the inverted index (index starting from the last character)
             eff_key_length - eff_index - offset - 1
         } else {
             //calculate the index adjusting for any previous offset
             eff_index - offset
-        }
+        };
+
+        NextKey::KeyIndex(next)
     }
 }
 
@@ -52,7 +54,9 @@ mod tests {
         println!("effective key len is {}", effective_key.len());
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = offsetreverse.schedule(index, key.len(), 1000);
+                let computed = offsetreverse
+                    .schedule(index, key.len(), 1000)
+                    .index_or_panic();
                 println!("{}", key[computed]);
                 println!("{}", effective_key[expected]);
                 assert_eq!(effective_key[expected], key[computed]);
@@ -71,7 +75,9 @@ mod tests {
         println!("effective key len is {}", effective_key.len());
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = offsetreverse.schedule(index, key.len(), 1000);
+                let computed = offsetreverse
+                    .schedule(index, key.len(), 1000)
+                    .index_or_panic();
                 println!("{}", key[computed]);
                 println!("{}", effective_key[expected]);
                 assert_eq!(effective_key[expected], key[computed]);
@@ -90,7 +96,9 @@ mod tests {
         println!("effective key len is {}", effective_key.len());
         for _ in 0..500 {
             for expected in 0..effective_key.len() {
-                let computed = offsetreverse.schedule(index, key.len(), 1000);
+                let computed = offsetreverse
+                    .schedule(index, key.len(), 1000)
+                    .index_or_panic();
                 println!("computed  {}", key[computed] as char);
                 println!("should be {}", effective_key[expected] as char);
                 assert_eq!(effective_key[expected], key[computed]);
