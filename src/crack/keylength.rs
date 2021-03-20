@@ -28,6 +28,16 @@ pub fn guesses(ciphertext: &[u8], keysizes: &mut Vec<(usize, f64)>) {
         *y = ((*y - b) + m * (*x as f64)) / *x as f64;
     }
 
+    // raise all values to be 1.0 or greater
+    let min = *keysizes
+        .iter()
+        .map(|(_, y)| y)
+        .min_by(|a, b| a.partial_cmp(&b).unwrap())
+        .unwrap();
+    for (_, y) in keysizes.iter_mut() {
+        *y += min.abs() + 1.0;
+    }
+
     // sort by best keysize, lowest first
     keysizes.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
 }

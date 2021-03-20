@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
     // (main) thread for printing results
     while running.load(Ordering::SeqCst) {
         // receive a single result
-        let (sched, keylen, success) = results.recv().unwrap();
+        let (testtype, testtypeguess, sched, keylen, success) = results.recv().unwrap();
 
         // get success as a percentage
         let success = (1.0 - (success as f64).min(1.0)) * 100.0;
@@ -87,8 +87,8 @@ fn main() -> anyhow::Result<()> {
 
         // print status line
         println!(
-            "{:>3}% correct  {:?} keylen: {}",
-            success as u8, sched, keylen
+            "{} {} {:>3}% correct  {:?} keylen: {}",
+            testtype, testtypeguess, success as u8, sched, keylen
         );
     }
 

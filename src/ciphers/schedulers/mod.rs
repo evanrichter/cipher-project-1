@@ -100,8 +100,7 @@ pub enum RandomScheduler {
 
 impl FromRng for RandomScheduler {
     fn from_rng(rng: &mut crate::Rng) -> Self {
-        //match rng.choose(&[0, 0, 1, 1, 1, 2, 2, 2, 3]) {
-        match rng.choose(&[0]) {
+        match rng.choose(&[0, 0, 1, 1, 1, 2, 2, 2, 3]) {
             0 => Self::Zero(RandomBaseScheduler::from_rng(rng)),
             1 => Self::One(
                 RandomBaseScheduler::from_rng(rng),

@@ -12,12 +12,12 @@ pub struct CrackWorker {
     // recv RandomSchedulers
     schedulers: Receiver<RandomScheduler>,
     // send back the RandomScheduler, keylen, and success
-    results: Sender<(RandomScheduler, usize, f32)>,
+    results: Sender<(u8, u8, RandomScheduler, usize, f32)>,
 }
 
 pub type WorkerComms = (
     Sender<RandomScheduler>,
-    Receiver<(RandomScheduler, usize, f32)>,
+    Receiver<(u8, u8, RandomScheduler, usize, f32)>,
     Vec<std::thread::JoinHandle<()>>,
 );
 
@@ -84,12 +84,12 @@ impl CrackWorker {
             let encryptor = Encryptor::new(key, sched, Rng::from_rng(&mut rng));
 
             // generate plaintext
-            let (plaintext, freqs) = if *rng.choose(&[true, true]) {
-                // test 1
-                rng.choose(&test1_known_plaintexts).clone()
-            } else {
-                // test 2
-                (gen.generate_words(200).to_string(), baseline_freqs.clone())
+            let testtype = if *rng.choose(&[true, false]) { 1 } else { 2 };
+
+            let plaintext = match testtype {
+                1 => rng.choose(&test1_known_plaintexts).0.clone(),
+                2 => gen.generate_words(200),
+                _ => unreachable!(),
             };
 
             // generate ciphertext
@@ -99,20 +99,14 @@ impl CrackWorker {
             // KEYLENGTH GUESSING
             guesses(&cipherbytes, &mut keylen_guesses);
 
-            // CRACKING SLICES
-            for (keylen, _) in keylen_guesses.iter() {
-                let res = crack(&cipherbytes, *keylen, &freqs); // TODO: we need to guess the actual frequency table not know it from dirty knowledge
-                crack_results.push(res);
-            }
+            // ===============   TEST 1   ===================== //
 
-            // BEFORE SPELL CHECKING, CHECK IF TEST 1
             let mut best_test1_score = f32::MAX;
-            let mut best_test1_guess = "";
 
-            for (known_pt, _) in test1_known_plaintexts.iter() {
+            for (known_pt, freqs) in test1_known_plaintexts.iter() {
                 let mut best_score = f32::MAX;
 
-                for crack in &crack_results {
+                for crack in (3..120_usize).map(|keylen| crack(&cipherbytes, keylen, &freqs)) {
                     let crackstr = bytes_to_str(&crack.plaintext);
                     let score =
                         strsim::levenshtein(&crackstr, &known_pt) as f32 / plaintext.len() as f32;
@@ -125,32 +119,27 @@ impl CrackWorker {
 
                 if best_score < best_test1_score {
                     best_test1_score = best_score;
-                    best_test1_guess = known_pt;
                 }
             }
 
-            if best_test1_guess != &plaintext {
-                println!("guess: {}", best_test1_guess);
-                println!("plaintext: {}", &plaintext);
+            if best_test1_score < 0.8 {
+                // it was probably test1, send back results
+                self.results
+                    .send((testtype, 1, encryptor.keyschedule, keylen, best_test1_score))
+                    .unwrap();
+
+                // continue main cracking loop
+                continue 'cracking;
             }
-            assert_eq!(
-                best_test1_guess, &plaintext,
-                "didn't pick the right plaintext"
-            );
 
-            // test is successful, send back results
-            self.results
-                .send((encryptor.keyschedule, keylen, best_test1_score))
-                .unwrap();
+            // ===============   TEST 2   ===================== //
 
-            // continue main cracking loop TODO: fix
-            continue 'cracking;
-
-            println!(
-                "{:?} {} {}",
-                encryptor.keyschedule, keylen, best_test1_score
-            );
-            panic!("we're only testing test 1, so if we get here we failed");
+            // CRACKING SLICES
+            for (keylen, keylen_confidence) in keylen_guesses.iter() {
+                let mut res = crack(&cipherbytes, *keylen, &baseline_freqs);
+                res.confidence *= keylen_confidence;
+                crack_results.push(res);
+            }
 
             // SPELL CHECKING
             for crack in &crack_results {
@@ -166,7 +155,7 @@ impl CrackWorker {
 
             // send back the results
             self.results
-                .send((encryptor.keyschedule, keylen, success))
+                .send((testtype, 2, encryptor.keyschedule, keylen, success))
                 .unwrap();
         }
     }
