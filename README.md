@@ -5,5 +5,5 @@
 Team **One Team Pad** brings you the ultimate cipher cracking tool.
 
 ## Project Links
-* [Todo Board](https://github.com/evanrichter/cipher-project-1/projects/1)
-* [Wiki](https://github.com/evanrichter/cipher-project-1/wiki)
+* [Report](https://github.com/evanrichter/cipher-project-1/blob/main/mittelsteadt-prenata-richter-report.pdf)
+* [Binary](https://github.com/evanrichter/cipher-project-1/blob/main/mittelsteadt-prenata-richter-decrypt)
